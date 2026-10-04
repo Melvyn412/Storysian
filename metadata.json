@@ -1,0 +1,7 @@
+{
+  "name": "Viking Realm: Blocky World",
+  "description": "A Roblox-inspired 3D blocky Viking sandbox world with battle campaigns, naval sieges, Drakkar longship voyages, village defense, and avatar customization.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
