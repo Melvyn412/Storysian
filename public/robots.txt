@@ -1,0 +1,6 @@
+# Robots.txt for storysian.com
+User-agent: *
+Allow: /
+
+# Sitemaps
+Sitemap: https://storysian.com/sitemap.xml

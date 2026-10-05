@@ -229,7 +229,7 @@ export const RobloxTopBar: React.FC<RobloxTopBarProps> = ({
           {/* War Council / Battles & Siege Map Button */}
           <button
             onClick={onToggleLandingPage}
-            className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded transition text-xs font-bold shrink-0 cursor-pointer ${
+            className={`flex items-center gap-1 px-2 sm:px-2.5 py-1.5 sm:py-1 rounded transition text-xs font-bold shrink-0 cursor-pointer ${
               showLandingPage
                 ? 'bg-gradient-to-r from-red-600 to-amber-600 text-white shadow-md ring-1 ring-amber-400'
                 : 'bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-neutral-950 font-extrabold shadow'
@@ -237,14 +237,29 @@ export const RobloxTopBar: React.FC<RobloxTopBarProps> = ({
             title="War Council: Choose Battles or Board Drakkar Warship"
           >
             <Swords className="w-3.5 h-3.5 shrink-0" />
-            <span className="hidden sm:inline">War Council</span>
+            <span className="text-[11px] sm:text-xs">War Council</span>
           </button>
 
-          {/* Live Multiplayer Realms, Co-Op Boss & PvP Button */}
+          {/* Mobile Quick Menu Hamburger Button (Always visible on mobile < md right next to War Council) */}
+          <button
+            onClick={() => setShowMobileMenu(!showMobileMenu)}
+            className={`md:hidden flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-bold text-xs shadow-md transition shrink-0 cursor-pointer ${
+              showMobileMenu
+                ? 'bg-amber-500 text-neutral-950 ring-2 ring-amber-300'
+                : 'bg-amber-600 hover:bg-amber-500 text-white border border-amber-400/80 shadow-[0_0_12px_rgba(245,158,11,0.5)]'
+            }`}
+            title="Open Full Viking Game Menu"
+            aria-label="Toggle Mobile Menu"
+          >
+            {showMobileMenu ? <X className="w-4 h-4 shrink-0" /> : <Menu className="w-4 h-4 shrink-0" />}
+            <span className="text-[11px] font-black uppercase tracking-wider">MENU</span>
+          </button>
+
+          {/* Live Multiplayer Realms, Co-Op Boss & PvP Button (Desktop) */}
           {onToggleMultiplayer && (
             <button
               onClick={onToggleMultiplayer}
-              className={`flex items-center gap-1 px-1.5 sm:px-2.5 py-1 rounded transition text-xs font-bold shrink-0 cursor-pointer ${
+              className={`hidden md:flex items-center gap-1 px-1.5 sm:px-2.5 py-1 rounded transition text-xs font-bold shrink-0 cursor-pointer ${
                 showMultiplayer
                   ? 'bg-emerald-500 text-neutral-950 shadow-md ring-1 ring-emerald-300'
                   : 'bg-emerald-950/90 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/60 shadow-sm'
@@ -260,17 +275,16 @@ export const RobloxTopBar: React.FC<RobloxTopBarProps> = ({
                     : 'text-amber-400'
                 }`}
               />
-              <span className="hidden sm:inline">Multiplayer</span>
-              <span className="sm:hidden text-[10px]">Online</span>
+              <span>Multiplayer</span>
               <span className="font-mono text-[10px]">({onlinePlayerCount})</span>
             </button>
           )}
 
-          {/* Young Viking Forager Meadow Realm Button */}
+          {/* Young Viking Forager Meadow Realm Button (Desktop) */}
           {onToggleYoungVikingRealm && (
             <button
               onClick={onToggleYoungVikingRealm}
-              className={`flex items-center gap-1 px-1.5 sm:px-2.5 py-1 rounded transition text-xs font-bold shrink-0 cursor-pointer ${
+              className={`hidden md:flex items-center gap-1 px-1.5 sm:px-2.5 py-1 rounded transition text-xs font-bold shrink-0 cursor-pointer ${
                 showYoungVikingRealm
                   ? 'bg-emerald-500 text-neutral-950 shadow-md ring-1 ring-emerald-300'
                   : 'bg-emerald-950/85 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/60'
@@ -278,17 +292,16 @@ export const RobloxTopBar: React.FC<RobloxTopBarProps> = ({
               title="Young Viking Wanderer & Forager Meadow Realm [Y]"
             >
               <TreePine className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span className="hidden sm:inline">Young Viking</span>
-              <span className="sm:hidden text-[10px]">Meadow</span>
+              <span>Young Viking</span>
               <span className="hidden xl:inline text-[9px] text-emerald-200 font-mono">[Y]</span>
             </button>
           )}
 
-          {/* How to Play & Keyboard Shortcuts Guide Button [?] */}
+          {/* How to Play & Keyboard Shortcuts Guide Button [?] (Desktop) */}
           {onToggleHowToPlay && (
             <button
               onClick={onToggleHowToPlay}
-              className={`flex items-center gap-1 px-1.5 sm:px-2.5 py-1 rounded transition text-xs font-bold shrink-0 cursor-pointer ${
+              className={`hidden md:flex items-center gap-1 px-1.5 sm:px-2.5 py-1 rounded transition text-xs font-bold shrink-0 cursor-pointer ${
                 showHowToPlay
                   ? 'bg-amber-400 text-neutral-950 shadow-md ring-1 ring-amber-200'
                   : 'bg-amber-950/85 hover:bg-amber-900 text-amber-300 border border-amber-500/60'
@@ -296,8 +309,7 @@ export const RobloxTopBar: React.FC<RobloxTopBarProps> = ({
               title="How to Play, WASD & Keyboard Shortcuts [?]"
             >
               <HelpCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span className="hidden sm:inline">How to Play</span>
-              <span className="sm:hidden text-[10px]">Guide</span>
+              <span>How to Play</span>
               <span className="hidden xl:inline text-[9px] text-amber-200 font-mono">[?]</span>
             </button>
           )}
@@ -564,17 +576,6 @@ export const RobloxTopBar: React.FC<RobloxTopBarProps> = ({
               {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
           </div>
-
-          {/* Mobile Quick Menu Hamburger Button (Screens < md) */}
-          <button
-            onClick={() => setShowMobileMenu(!showMobileMenu)}
-            className={`md:hidden p-1.5 rounded transition flex items-center justify-center ${
-              showMobileMenu ? 'bg-amber-600 text-white' : 'bg-neutral-800 text-neutral-200 border border-neutral-700'
-            }`}
-            title="Open Quick Menu"
-          >
-            {showMobileMenu ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-          </button>
         </div>
       </header>
 

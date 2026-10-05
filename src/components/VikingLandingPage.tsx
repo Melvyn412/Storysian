@@ -401,7 +401,7 @@ export const VikingLandingPage: React.FC<VikingLandingPageProps> = ({
                         {selectedScenario.mountShipOnStart ? (
                           <>
                             <Ship className="w-4 h-4" />
-                            <span>Board Drakkar & Launch Siege</span>
+                            <span>Board Drakkar &amp; Launch Siege</span>
                           </>
                         ) : (
                           <>
@@ -418,111 +418,239 @@ export const VikingLandingPage: React.FC<VikingLandingPageProps> = ({
                       >
                         <span>Free Roam Katfjord Village</span>
                       </button>
-
-                      {onOpenMultiplayer && (
-                        <button
-                          onClick={() => {
-                            onClose();
-                            onOpenMultiplayer();
-                          }}
-                          className="flex items-center justify-center gap-2 px-4 py-3 bg-emerald-950/90 hover:bg-emerald-900 border border-emerald-500/60 text-emerald-300 text-sm font-bold rounded-lg transition whitespace-nowrap cursor-pointer"
-                        >
-                          <Radio className="w-4 h-4 text-emerald-400 animate-pulse" />
-                          <span>Live Multiplayer & Co-Op Boss ({onlinePlayerCount} Online)</span>
-                        </button>
-                      )}
-
-                      {onOpenYoungVikingRealm && (
-                        <button
-                          onClick={() => {
-                            onClose();
-                            onOpenYoungVikingRealm();
-                          }}
-                          className="flex items-center justify-center gap-2 px-4 py-3 bg-teal-950/90 hover:bg-teal-900 border border-teal-400/60 text-teal-200 text-sm font-bold rounded-lg transition whitespace-nowrap cursor-pointer"
-                        >
-                          <TreePine className="w-4 h-4 text-teal-300" />
-                          <span>Young Viking Forager Realm [Y]</span>
-                        </button>
-                      )}
-
-                      {onOpenHowToPlay && (
-                        <button
-                          onClick={() => {
-                            onOpenHowToPlay();
-                          }}
-                          className="flex items-center justify-center gap-2 px-4 py-3 bg-amber-950/90 hover:bg-amber-900 border border-amber-500/60 text-amber-200 text-sm font-bold rounded-lg transition whitespace-nowrap cursor-pointer"
-                        >
-                          <HelpCircle className="w-4 h-4 text-amber-400" />
-                          <span>How to Play &amp; Controls [?]</span>
-                        </button>
-                      )}
-
-                      {onOpenFishing && (
-                        <button
-                          onClick={() => {
-                            onClose();
-                            onOpenFishing();
-                          }}
-                          className="flex items-center justify-center gap-2 px-4 py-3 bg-sky-950/90 hover:bg-sky-900 border border-sky-400/60 text-sky-200 text-sm font-bold rounded-lg transition whitespace-nowrap cursor-pointer"
-                        >
-                          <Fish className="w-4 h-4 text-sky-400" />
-                          <span>Fjord Fishing [K]</span>
-                        </button>
-                      )}
-
-                      {onOpenArchery && (
-                        <button
-                          onClick={() => {
-                            onClose();
-                            onOpenArchery();
-                          }}
-                          className="flex items-center justify-center gap-2 px-4 py-3 bg-orange-950/90 hover:bg-orange-900 border border-orange-500/60 text-orange-200 text-sm font-bold rounded-lg transition whitespace-nowrap cursor-pointer"
-                        >
-                          <Target className="w-4 h-4 text-orange-400" />
-                          <span>Archery Range [O]</span>
-                        </button>
-                      )}
-
-                      {onOpenBuilding && (
-                        <button
-                          onClick={() => {
-                            onClose();
-                            onOpenBuilding();
-                          }}
-                          className="flex items-center justify-center gap-2 px-4 py-3 bg-emerald-950/90 hover:bg-emerald-900 border border-emerald-500/60 text-emerald-200 text-sm font-bold rounded-lg transition whitespace-nowrap cursor-pointer"
-                        >
-                          <Hammer className="w-4 h-4 text-emerald-400" />
-                          <span>Fortress Build &amp; Raids [U]</span>
-                        </button>
-                      )}
-
-                      {onOpenConquest && (
-                        <button
-                          onClick={() => {
-                            onClose();
-                            onOpenConquest();
-                          }}
-                          className="flex items-center justify-center gap-2 px-4 py-3 bg-red-950/90 hover:bg-red-900 border border-red-500/60 text-red-200 text-sm font-bold rounded-lg transition whitespace-nowrap cursor-pointer"
-                        >
-                          <Flag className="w-4 h-4 text-red-400" />
-                          <span>Clan Conquest (GvG) [J]</span>
-                        </button>
-                      )}
-
-                      {onEnterCrypt && (
-                        <button
-                          onClick={() => {
-                            onClose();
-                            onEnterCrypt();
-                          }}
-                          className="flex items-center justify-center gap-2 px-4 py-3 bg-neutral-900 hover:bg-neutral-800 border border-emerald-500/50 text-emerald-300 text-sm font-bold rounded-lg transition whitespace-nowrap cursor-pointer"
-                        >
-                          <Skull className="w-4 h-4 text-emerald-400" />
-                          <span>Draugr Barrow Crypt [C]</span>
-                        </button>
-                      )}
                     </div>
                   </div>
+                </div>
+              </section>
+
+              {/* Norse Realms, Game Modes & Activities Quick-Launch Section (Fully Visible & Scrollable on Mobile) */}
+              <section className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Swords className="w-4 h-4 text-amber-400" />
+                    <h3 className="text-sm font-bold text-white font-['Cinzel',serif] uppercase tracking-wider">
+                      Viking Realms, Minigames &amp; Systems
+                    </h3>
+                  </div>
+                  <span className="text-[11px] text-neutral-400 hidden sm:inline">Tap any activity to launch</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {/* 1. Live Multiplayer & Co-Op Boss */}
+                  {onOpenMultiplayer && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        onOpenMultiplayer();
+                      }}
+                      className="group p-3.5 rounded-xl bg-gradient-to-br from-emerald-950/70 via-neutral-900 to-neutral-900 border border-emerald-500/50 hover:border-emerald-400 text-left transition-all shadow-md hover:shadow-emerald-500/10 cursor-pointer flex flex-col justify-between gap-2.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                          {onlinePlayerCount} Online
+                        </span>
+                        <Radio className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white group-hover:text-emerald-300 transition-colors">
+                          Live Multiplayer Hub [P]
+                        </h4>
+                        <p className="text-[11px] text-neutral-400 mt-0.5 line-clamp-2">
+                          Co-Op World Boss raids, naval sieges &amp; Holmgang PvP battles.
+                        </p>
+                      </div>
+                    </button>
+                  )}
+
+                  {/* 2. Young Viking Forager Meadow Realm */}
+                  {onOpenYoungVikingRealm && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        onOpenYoungVikingRealm();
+                      }}
+                      className="group p-3.5 rounded-xl bg-gradient-to-br from-teal-950/70 via-neutral-900 to-neutral-900 border border-teal-500/50 hover:border-teal-400 text-left transition-all shadow-md hover:shadow-teal-500/10 cursor-pointer flex flex-col justify-between gap-2.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="px-2 py-0.5 rounded bg-teal-500/20 border border-teal-400/40 text-teal-300 text-[10px] font-extrabold uppercase tracking-wider">
+                          Peaceful Meadow
+                        </span>
+                        <TreePine className="w-4 h-4 text-teal-300 group-hover:scale-110 transition-transform" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white group-hover:text-teal-200 transition-colors">
+                          Young Viking Realm [Y]
+                        </h4>
+                        <p className="text-[11px] text-neutral-400 mt-0.5 line-clamp-2">
+                          Auto-wander, gather berries, wild herbs &amp; craft at the campfire.
+                        </p>
+                      </div>
+                    </button>
+                  )}
+
+                  {/* 3. How to Play & Controls Guide */}
+                  {onOpenHowToPlay && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onOpenHowToPlay();
+                      }}
+                      className="group p-3.5 rounded-xl bg-gradient-to-br from-amber-950/70 via-neutral-900 to-neutral-900 border border-amber-500/50 hover:border-amber-400 text-left transition-all shadow-md hover:shadow-amber-500/10 cursor-pointer flex flex-col justify-between gap-2.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-400/40 text-amber-300 text-[10px] font-extrabold uppercase tracking-wider">
+                          Shortcuts &amp; Guide
+                        </span>
+                        <HelpCircle className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white group-hover:text-amber-200 transition-colors">
+                          How to Play &amp; Controls [?]
+                        </h4>
+                        <p className="text-[11px] text-neutral-400 mt-0.5 line-clamp-2">
+                          Touch controls, WASD shortcuts, combat skills &amp; tactic guide.
+                        </p>
+                      </div>
+                    </button>
+                  )}
+
+                  {/* 4. Fjord Fishing System */}
+                  {onOpenFishing && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        onOpenFishing();
+                      }}
+                      className="group p-3.5 rounded-xl bg-gradient-to-br from-sky-950/70 via-neutral-900 to-neutral-900 border border-sky-500/50 hover:border-sky-400 text-left transition-all shadow-md hover:shadow-sky-500/10 cursor-pointer flex flex-col justify-between gap-2.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="px-2 py-0.5 rounded bg-sky-500/20 border border-sky-400/40 text-sky-300 text-[10px] font-extrabold uppercase tracking-wider">
+                          Water Minigame
+                        </span>
+                        <Fish className="w-4 h-4 text-sky-400 group-hover:scale-110 transition-transform" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white group-hover:text-sky-200 transition-colors">
+                          Katfjord Fjord Fishing [K]
+                        </h4>
+                        <p className="text-[11px] text-neutral-400 mt-0.5 line-clamp-2">
+                          Hook bites, reel in Salmon &amp; Baby Kraken, smoke or sell fish.
+                        </p>
+                      </div>
+                    </button>
+                  )}
+
+                  {/* 5. Norse Archery Range */}
+                  {onOpenArchery && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        onOpenArchery();
+                      }}
+                      className="group p-3.5 rounded-xl bg-gradient-to-br from-orange-950/70 via-neutral-900 to-neutral-900 border border-orange-500/50 hover:border-orange-400 text-left transition-all shadow-md hover:shadow-orange-500/10 cursor-pointer flex flex-col justify-between gap-2.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="px-2 py-0.5 rounded bg-orange-500/20 border border-orange-400/40 text-orange-300 text-[10px] font-extrabold uppercase tracking-wider">
+                          Target Ballistics
+                        </span>
+                        <Target className="w-4 h-4 text-orange-400 group-hover:scale-110 transition-transform" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white group-hover:text-orange-200 transition-colors">
+                          Norse Archery Range [O]
+                        </h4>
+                        <p className="text-[11px] text-neutral-400 mt-0.5 line-clamp-2">
+                          Bodkin, Flame &amp; Frost arrows with gravity drop &amp; bullseyes.
+                        </p>
+                      </div>
+                    </button>
+                  )}
+
+                  {/* 6. Fortress Base Building & Saxon Raids */}
+                  {onOpenBuilding && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        onOpenBuilding();
+                      }}
+                      className="group p-3.5 rounded-xl bg-gradient-to-br from-emerald-950/70 via-neutral-900 to-neutral-900 border border-emerald-500/50 hover:border-emerald-400 text-left transition-all shadow-md hover:shadow-emerald-500/10 cursor-pointer flex flex-col justify-between gap-2.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[10px] font-extrabold uppercase tracking-wider">
+                          Base Construction
+                        </span>
+                        <Hammer className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white group-hover:text-emerald-300 transition-colors">
+                          Fortress Build &amp; Raids [U]
+                        </h4>
+                        <p className="text-[11px] text-neutral-400 mt-0.5 line-clamp-2">
+                          Place palisades, watchtowers &amp; defend against Saxon waves.
+                        </p>
+                      </div>
+                    </button>
+                  )}
+
+                  {/* 7. Clan Conquest Battlefields (GvG) */}
+                  {onOpenConquest && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        onOpenConquest();
+                      }}
+                      className="group p-3.5 rounded-xl bg-gradient-to-br from-red-950/70 via-neutral-900 to-neutral-900 border border-red-500/50 hover:border-red-400 text-left transition-all shadow-md hover:shadow-red-500/10 cursor-pointer flex flex-col justify-between gap-2.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="px-2 py-0.5 rounded bg-red-500/20 border border-red-400/40 text-red-300 text-[10px] font-extrabold uppercase tracking-wider">
+                          Territory Wars
+                        </span>
+                        <Flag className="w-4 h-4 text-red-400 group-hover:scale-110 transition-transform" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white group-hover:text-red-300 transition-colors">
+                          Clan Conquest (GvG) [J]
+                        </h4>
+                        <p className="text-[11px] text-neutral-400 mt-0.5 line-clamp-2">
+                          Capture 3 frontline watchtowers across Midgard for your clan.
+                        </p>
+                      </div>
+                    </button>
+                  )}
+
+                  {/* 8. Draugr Barrow Crypt Dungeon */}
+                  {onEnterCrypt && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        onEnterCrypt();
+                      }}
+                      className="group p-3.5 rounded-xl bg-gradient-to-br from-neutral-900 via-neutral-900 to-emerald-950/50 border border-emerald-500/40 hover:border-emerald-400 text-left transition-all shadow-md hover:shadow-emerald-500/10 cursor-pointer flex flex-col justify-between gap-2.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[10px] font-extrabold uppercase tracking-wider">
+                          Subterranean Tomb
+                        </span>
+                        <Skull className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white group-hover:text-emerald-300 transition-colors">
+                          Draugr Barrow Crypt [C]
+                        </h4>
+                        <p className="text-[11px] text-neutral-400 mt-0.5 line-clamp-2">
+                          Subterranean dungeon with skeletons, Crypt Lord boss &amp; loot.
+                        </p>
+                      </div>
+                    </button>
+                  )}
                 </div>
               </section>
 
