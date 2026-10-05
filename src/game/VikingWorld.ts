@@ -1,7 +1,8 @@
 import * as THREE from 'three';
-import { BattleId, TycoonBuilding } from '../types';
+import { BattleId, TycoonBuilding, DrakkarCustomization } from '../types';
 import { sound } from '../audio/soundEngine';
 import { INITIAL_TYCOON_BUILDINGS } from './robloxFeaturesConfig';
+import { getNavalItemById, DEFAULT_DRAKKAR_CUSTOMIZATION } from './navalArmoryConfig';
 
 export type WeatherCondition = 'sunny' | 'foggy' | 'snowy' | 'stormy';
 
@@ -43,6 +44,10 @@ export class VikingWorld {
   public renderer: THREE.WebGLRenderer;
   public waterMesh: THREE.Mesh | null = null;
   public shipGroup: THREE.Group | null = null;
+  public shipFigureheadGroup: THREE.Group = new THREE.Group();
+  public shipSailGroup: THREE.Group = new THREE.Group();
+  public shipShieldsGroup: THREE.Group = new THREE.Group();
+  public currentShipCustomization: DrakkarCustomization = { ...DEFAULT_DRAKKAR_CUSTOMIZATION };
   public interactiveObjects: InteractiveObject[] = [];
   public placedBarricades: THREE.Mesh[] = [];
   public fireLights: THREE.PointLight[] = [];
@@ -747,11 +752,6 @@ export class VikingWorld {
     prow.castShadow = true;
     this.shipGroup.add(prow);
 
-    const prowHead = new THREE.Mesh(new THREE.BoxGeometry(3, 4, 3.5), trimMat);
-    prowHead.position.set(0, 10.5, 19.5);
-    prowHead.castShadow = true;
-    this.shipGroup.add(prowHead);
-
     // Dragon Tail (Stern)
     const stern = new THREE.Mesh(new THREE.BoxGeometry(2, 7, 2.5), trimMat);
     stern.position.set(0, 5, -17.5);
@@ -777,26 +777,11 @@ export class VikingWorld {
     yard.position.set(0, 18, 0);
     this.shipGroup.add(yard);
 
-    // Red & White Striped Viking Sail
-    const sail = new THREE.Mesh(
-      new THREE.BoxGeometry(16, 12, 0.3),
-      new THREE.MeshStandardMaterial({ color: 0xcc2929, roughness: 0.9 })
-    );
-    sail.position.set(0, 12, 0);
-    this.shipGroup.add(sail);
-
-    // Shields lined along the gunwales
-    for (let s = -12; s <= 12; s += 4) {
-      const shieldL = this.createRoundShield(s % 8 === 0 ? 0xd97706 : 0xdc2626);
-      shieldL.position.set(-5.2, 3.6, s);
-      shieldL.rotation.y = -Math.PI / 2;
-      this.shipGroup.add(shieldL);
-
-      const shieldR = this.createRoundShield(s % 8 === 0 ? 0xdc2626 : 0xd97706);
-      shieldR.position.set(5.2, 3.6, s);
-      shieldR.rotation.y = Math.PI / 2;
-      this.shipGroup.add(shieldR);
-    }
+    // Dynamic Drakkar Customization Groups (Sail patterns, Gunwale shields, Bow figureheads)
+    this.shipGroup.add(this.shipFigureheadGroup);
+    this.shipGroup.add(this.shipSailGroup);
+    this.shipGroup.add(this.shipShieldsGroup);
+    this.updateShipCustomization(this.currentShipCustomization);
 
     // Steering Helm
     const helmGeo = new THREE.CylinderGeometry(1.5, 1.5, 0.4, 8);
@@ -941,12 +926,13 @@ export class VikingWorld {
   public setTerritoryCaptured(captured: boolean) {
     if (!this.territoryFlagMesh) return;
     const mat = this.territoryFlagMesh.material as THREE.MeshStandardMaterial;
+    if (!mat || !mat.color) return;
     if (captured) {
       mat.color.setHex(0xfacc15);
-      mat.emissive.setHex(0xca8a04);
+      if (mat.emissive) mat.emissive.setHex(0xca8a04);
     } else {
       mat.color.setHex(0xef4444);
-      mat.emissive.setHex(0x7f1d1d);
+      if (mat.emissive) mat.emissive.setHex(0x7f1d1d);
     }
   }
 
@@ -1197,7 +1183,7 @@ export class VikingWorld {
   /**
    * Helper to create a classic wooden & iron rim round shield
    */
-  public createRoundShield(centerColor: number = 0xb83227): THREE.Group {
+  public createRoundShield(centerColor: number = 0xb83227, bossColor: number = 0x222222): THREE.Group {
     const group = new THREE.Group();
 
     // Wood body
@@ -1211,7 +1197,7 @@ export class VikingWorld {
     // Iron Boss (center knob)
     const boss = new THREE.Mesh(
       new THREE.SphereGeometry(0.5, 8, 8),
-      new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.3 })
+      new THREE.MeshStandardMaterial({ color: bossColor, metalness: 0.8, roughness: 0.3 })
     );
     boss.scale.z = 0.5;
     boss.position.z = 0.2;
@@ -1220,11 +1206,271 @@ export class VikingWorld {
     // Iron rim
     const rim = new THREE.Mesh(
       new THREE.TorusGeometry(1.6, 0.12, 6, 16),
-      new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8 })
+      new THREE.MeshStandardMaterial({ color: bossColor, metalness: 0.8 })
     );
     group.add(rim);
 
     return group;
+  }
+
+  /**
+   * Dynamically customize Drakkar Longship Sail patterns, Hull Gunwale shields, and Bow Figureheads
+   */
+  public updateShipCustomization(customization: DrakkarCustomization): void {
+    this.currentShipCustomization = { ...customization };
+    if (!this.shipGroup) return;
+
+    // 1. UPDATE SAIL PATTERN
+    this.shipSailGroup.clear();
+    const sailItem = getNavalItemById(customization.sailId) || getNavalItemById('sail_crimson_raider');
+    const sailColorHex = sailItem?.sailColor ? parseInt(sailItem.sailColor.replace('#', '0x'), 16) : 0xcc2929;
+    const stripeColorHex = sailItem?.sailStripeColor ? parseInt(sailItem.sailStripeColor.replace('#', '0x'), 16) : 0xf8fafc;
+
+    // Build authentic multi-striped vertical panels for Viking square sail
+    const sailWidth = 16;
+    const sailHeight = 12;
+    const stripeCount = 8;
+    const stripeWidth = sailWidth / stripeCount;
+
+    for (let i = 0; i < stripeCount; i++) {
+      const isEven = i % 2 === 0;
+      const stripeMat = new THREE.MeshStandardMaterial({
+        color: isEven ? sailColorHex : stripeColorHex,
+        roughness: 0.9,
+      });
+      const stripeMesh = new THREE.Mesh(new THREE.BoxGeometry(stripeWidth, sailHeight, 0.3), stripeMat);
+      stripeMesh.position.set(-sailWidth / 2 + stripeWidth / 2 + i * stripeWidth, 12, 0);
+      stripeMesh.castShadow = true;
+      this.shipSailGroup.add(stripeMesh);
+    }
+
+    // Central Emblem or runic medallion on the sail
+    const emblemMat = new THREE.MeshStandardMaterial({
+      color: stripeColorHex,
+      metalness: 0.4,
+      roughness: 0.6,
+      emissive: sailItem?.rarity === 'mythic' || sailItem?.rarity === 'legendary' ? sailColorHex : 0x000000,
+      emissiveIntensity: 0.35,
+    });
+    const emblemCenter = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 0.4, 12), emblemMat);
+    emblemCenter.rotation.x = Math.PI / 2;
+    emblemCenter.position.set(0, 12, 0.1);
+    this.shipSailGroup.add(emblemCenter);
+
+    // Diagonal runic crest crossbars
+    const bar1 = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.4, 0.42), emblemMat);
+    bar1.rotation.z = Math.PI / 4;
+    bar1.position.set(0, 12, 0.12);
+    this.shipSailGroup.add(bar1);
+    const bar2 = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.4, 0.42), emblemMat);
+    bar2.rotation.z = -Math.PI / 4;
+    bar2.position.set(0, 12, 0.12);
+    this.shipSailGroup.add(bar2);
+
+    // 2. UPDATE HULL SHIELDS
+    this.shipShieldsGroup.clear();
+    const shieldsItem = getNavalItemById(customization.shieldsId) || getNavalItemById('shields_clan_iron');
+    const colorAHex = shieldsItem?.shieldColorA ? parseInt(shieldsItem.shieldColorA.replace('#', '0x'), 16) : 0xdc2626;
+    const colorBHex = shieldsItem?.shieldColorB ? parseInt(shieldsItem.shieldColorB.replace('#', '0x'), 16) : 0xd97706;
+    const bossHex = shieldsItem?.shieldBossColor ? parseInt(shieldsItem.shieldBossColor.replace('#', '0x'), 16) : 0xcbd5e1;
+
+    for (let s = -12; s <= 12; s += 4) {
+      const useColorA = s % 8 === 0;
+      const shieldL = this.createRoundShield(useColorA ? colorAHex : colorBHex, bossHex);
+      shieldL.position.set(-5.2, 3.6, s);
+      shieldL.rotation.y = -Math.PI / 2;
+      this.shipShieldsGroup.add(shieldL);
+
+      const shieldR = this.createRoundShield(useColorA ? colorBHex : colorAHex, bossHex);
+      shieldR.position.set(5.2, 3.6, s);
+      shieldR.rotation.y = Math.PI / 2;
+      this.shipShieldsGroup.add(shieldR);
+    }
+
+    // 3. UPDATE BOW FIGUREHEAD
+    this.shipFigureheadGroup.clear();
+    const figItem = getNavalItemById(customization.figureheadId) || getNavalItemById('fig_drakkar_dragon');
+    const figColorHex = figItem?.figureheadColor ? parseInt(figItem.figureheadColor.replace('#', '0x'), 16) : 0xa64424;
+    const emissiveHex = figItem?.emissiveColor ? parseInt(figItem.emissiveColor.replace('#', '0x'), 16) : 0x7c2d12;
+    const figType = figItem?.figureheadType || 'dragon';
+
+    const figureheadMat = new THREE.MeshStandardMaterial({
+      color: figColorHex,
+      roughness: 0.65,
+      metalness: figItem?.rarity === 'mythic' || figItem?.rarity === 'legendary' ? 0.6 : 0.2,
+    });
+    const eyeMat = new THREE.MeshStandardMaterial({
+      color: emissiveHex,
+      emissive: emissiveHex,
+      emissiveIntensity: 1.4,
+    });
+
+    const prowAnchor = new THREE.Group();
+    prowAnchor.position.set(0, 10.5, 19.5);
+
+    if (figType === 'dragon') {
+      // Main dragon head snout
+      const mainHead = new THREE.Mesh(new THREE.BoxGeometry(3, 3.8, 3.6), figureheadMat);
+      mainHead.castShadow = true;
+      prowAnchor.add(mainHead);
+
+      // Upper jaw snout extending forward
+      const snout = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.2, 3.2), figureheadMat);
+      snout.position.set(0, -0.6, 2.8);
+      snout.castShadow = true;
+      prowAnchor.add(snout);
+
+      // Left and right curved horns
+      [-1.4, 1.4].forEach((sideX) => {
+        const horn = new THREE.Mesh(new THREE.ConeGeometry(0.5, 2.8, 6), figureheadMat);
+        horn.position.set(sideX, 2.2, -0.8);
+        horn.rotation.x = -Math.PI / 4;
+        horn.rotation.z = sideX > 0 ? -Math.PI / 8 : Math.PI / 8;
+        horn.castShadow = true;
+        prowAnchor.add(horn);
+      });
+
+      // Glowing Runic Eyes
+      [-1.1, 1.1].forEach((sideX) => {
+        const eye = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 8), eyeMat);
+        eye.position.set(sideX, 0.4, 1.4);
+        prowAnchor.add(eye);
+      });
+    } else if (figType === 'wolf') {
+      // Fenrir wolf head
+      const wolfBase = new THREE.Mesh(new THREE.BoxGeometry(3, 3.6, 3.4), figureheadMat);
+      prowAnchor.add(wolfBase);
+
+      const wolfMuzzle = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.8, 3.5), figureheadMat);
+      wolfMuzzle.position.set(0, -0.6, 2.7);
+      prowAnchor.add(wolfMuzzle);
+
+      // Pointed ears
+      [-1.1, 1.1].forEach((sideX) => {
+        const ear = new THREE.Mesh(new THREE.ConeGeometry(0.6, 2.2, 5), figureheadMat);
+        ear.position.set(sideX, 2.4, -0.5);
+        prowAnchor.add(ear);
+      });
+
+      // Iron fangs
+      const fangMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.8 });
+      [-0.7, 0.7].forEach((sideX) => {
+        const fang = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.9, 4), fangMat);
+        fang.position.set(sideX, -1.6, 3.6);
+        fang.rotation.x = Math.PI;
+        prowAnchor.add(fang);
+      });
+
+      // Glowing Cyan / Ice Eyes
+      [-0.95, 0.95].forEach((sideX) => {
+        const eye = new THREE.Mesh(new THREE.SphereGeometry(0.32, 8, 8), eyeMat);
+        eye.position.set(sideX, 0.35, 1.5);
+        prowAnchor.add(eye);
+      });
+    } else if (figType === 'raven') {
+      // Odin's Raven
+      const ravenHead = new THREE.Mesh(new THREE.SphereGeometry(1.8, 10, 10), figureheadMat);
+      prowAnchor.add(ravenHead);
+
+      // Curved downward beak
+      const beakMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3 });
+      const beak = new THREE.Mesh(new THREE.ConeGeometry(0.9, 3.6, 6), beakMat);
+      beak.rotation.x = Math.PI / 2.3;
+      beak.position.set(0, -0.4, 2.8);
+      prowAnchor.add(beak);
+
+      // Side feather ruffs
+      [-1.3, 1.3].forEach((sideX) => {
+        const wingPlume = new THREE.Mesh(new THREE.BoxGeometry(0.4, 2.4, 3.0), figureheadMat);
+        wingPlume.position.set(sideX, 0.8, -0.8);
+        wingPlume.rotation.z = sideX > 0 ? -0.3 : 0.3;
+        prowAnchor.add(wingPlume);
+      });
+
+      // Amber glowing eyes
+      [-1.1, 1.1].forEach((sideX) => {
+        const eye = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 8), eyeMat);
+        eye.position.set(sideX, 0.5, 1.2);
+        prowAnchor.add(eye);
+      });
+    } else if (figType === 'ram') {
+      // Thor's Battering Ram
+      const ramSkull = new THREE.Mesh(new THREE.BoxGeometry(3.2, 4.0, 3.5), figureheadMat);
+      prowAnchor.add(ramSkull);
+
+      // Front iron bumper / reinforced ram face
+      const bumperMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.9 });
+      const bumper = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.8, 1.2, 8), bumperMat);
+      bumper.rotation.x = Math.PI / 2;
+      bumper.position.set(0, 0, 2.2);
+      prowAnchor.add(bumper);
+
+      // Curled ram horns on both sides
+      [-1.7, 1.7].forEach((sideX) => {
+        const hornTorus = new THREE.Mesh(new THREE.TorusGeometry(1.4, 0.45, 8, 16, Math.PI * 1.3), figureheadMat);
+        hornTorus.position.set(sideX, 0.8, 0);
+        hornTorus.rotation.y = sideX > 0 ? Math.PI / 2 : -Math.PI / 2;
+        hornTorus.rotation.z = Math.PI / 4;
+        prowAnchor.add(hornTorus);
+      });
+
+      // Glowing golden runes on forehead
+      const runeLight = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 0.3), eyeMat);
+      runeLight.position.set(0, 1.4, 1.8);
+      prowAnchor.add(runeLight);
+    } else if (figType === 'serpent') {
+      // Jörmungandr Sea Serpent
+      const serpentHead = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.8, 3.6, 8), figureheadMat);
+      serpentHead.rotation.x = Math.PI / 3;
+      serpentHead.position.set(0, 0.5, 0.8);
+      prowAnchor.add(serpentHead);
+
+      const snakeSnout = new THREE.Mesh(new THREE.ConeGeometry(1.4, 3.2, 8), figureheadMat);
+      snakeSnout.rotation.x = Math.PI / 2.2;
+      snakeSnout.position.set(0, -0.4, 3.2);
+      prowAnchor.add(snakeSnout);
+
+      // Flared cobra hood flaps
+      [-1.6, 1.6].forEach((sideX) => {
+        const hood = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3.6, 2.4), figureheadMat);
+        hood.position.set(sideX, 0.4, -0.2);
+        hood.rotation.y = sideX > 0 ? -0.4 : 0.4;
+        prowAnchor.add(hood);
+      });
+
+      // Emerald glowing eyes
+      [-1.1, 1.1].forEach((sideX) => {
+        const eye = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 8), eyeMat);
+        eye.position.set(sideX, 0.5, 2.0);
+        prowAnchor.add(eye);
+      });
+    } else if (figType === 'valkyrie') {
+      // Golden Winged Valkyrie Maiden
+      const maidenHead = new THREE.Mesh(new THREE.SphereGeometry(1.5, 10, 10), figureheadMat);
+      prowAnchor.add(maidenHead);
+
+      // Golden winged helmet
+      const crownMat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, metalness: 0.9, roughness: 0.2 });
+      const crown = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 0.6, 10), crownMat);
+      crown.position.set(0, 1.2, 0);
+      prowAnchor.add(crown);
+
+      // Swept wings
+      [-1.6, 1.6].forEach((sideX) => {
+        const wing = new THREE.Mesh(new THREE.BoxGeometry(0.3, 4.0, 2.6), crownMat);
+        wing.position.set(sideX, 1.4, -1.0);
+        wing.rotation.x = -Math.PI / 6;
+        wing.rotation.z = sideX > 0 ? -0.3 : 0.3;
+        prowAnchor.add(wing);
+      });
+
+      // Sun halo disc with radiant emissive glow
+      const halo = new THREE.Mesh(new THREE.TorusGeometry(1.8, 0.2, 8, 20), eyeMat);
+      halo.position.set(0, 0.8, -0.8);
+      prowAnchor.add(halo);
+    }
+
+    this.shipFigureheadGroup.add(prowAnchor);
   }
 
   /**

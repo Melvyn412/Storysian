@@ -93,7 +93,7 @@ export class ClanConquestManager {
 
             // Update banner color
             const banner = this.bannerMeshes.get(t.id);
-            if (banner) {
+            if (banner && (banner.material as THREE.MeshStandardMaterial)?.color) {
               (banner.material as THREE.MeshStandardMaterial).color.setHex(0xd97706);
             }
 

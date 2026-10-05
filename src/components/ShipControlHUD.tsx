@@ -10,6 +10,7 @@ import {
   Waves,
   Crosshair,
   RefreshCw,
+  Ship,
 } from 'lucide-react';
 import { SeaSerpentState } from '../types';
 
@@ -23,6 +24,7 @@ interface ShipControlHUDProps {
   seaSerpent?: SeaSerpentState | null;
   onFireBallista?: (side: 'port' | 'starboard') => void;
   onRespawnSeaSerpent?: () => void;
+  onOpenArmory?: () => void;
 }
 
 export const ShipControlHUD: React.FC<ShipControlHUDProps> = ({
@@ -34,6 +36,7 @@ export const ShipControlHUD: React.FC<ShipControlHUDProps> = ({
   seaSerpent,
   onFireBallista,
   onRespawnSeaSerpent,
+  onOpenArmory,
 }) => {
   const [crewRole, setCrewRole] = useState<'captain' | 'gunner'>('captain');
 
@@ -82,6 +85,19 @@ export const ShipControlHUD: React.FC<ShipControlHUDProps> = ({
             Ballista Gunner
           </button>
         </div>
+
+        {/* Drakkar Armory Customization Button */}
+        {onOpenArmory && (
+          <button
+            onClick={onOpenArmory}
+            className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold rounded-lg transition cursor-pointer shadow-sm"
+            title="Open Armory to customize Drakkar sail patterns, hull shields, and bow figurehead"
+          >
+            <Ship className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden sm:inline">Ship Armory</span>
+            <span className="sm:hidden">Armory</span>
+          </button>
+        )}
 
         <div className="flex items-center gap-2">
           {/* Speedometer */}

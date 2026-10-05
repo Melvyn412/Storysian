@@ -53,6 +53,32 @@ export interface EquippedGear {
   headwearId: string;
 }
 
+export type NavalCategory = 'sail' | 'shields' | 'figurehead';
+
+export interface NavalCustomizationItem {
+  id: string;
+  category: NavalCategory;
+  name: string;
+  lore: string;
+  costSilver: number;
+  rarity: ItemRarity;
+  sailColor?: string;
+  sailStripeColor?: string;
+  sailEmblem?: string;
+  shieldColorA?: string;
+  shieldColorB?: string;
+  shieldBossColor?: string;
+  figureheadType?: 'dragon' | 'wolf' | 'raven' | 'ram' | 'serpent' | 'valkyrie';
+  figureheadColor?: string;
+  emissiveColor?: string;
+}
+
+export interface DrakkarCustomization {
+  sailId: string;
+  shieldsId: string;
+  figureheadId: string;
+}
+
 export interface Quest {
   id: string;
   title: string;

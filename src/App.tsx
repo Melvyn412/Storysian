@@ -60,6 +60,9 @@ import {
   PetEvolutionData,
   MountArmorPiece,
   ClanConquestTower,
+  DrakkarCustomization,
+  NavalCategory,
+  NavalCustomizationItem,
 } from './types';
 import { FishingManager } from './game/FishingManager';
 import { ArcheryManager } from './game/ArcheryManager';
@@ -69,6 +72,11 @@ import { ClanConquestManager } from './game/ClanConquestManager';
 import { BATTLE_SCENARIOS } from './game/battleScenarios';
 import { createCampaignSteps } from './game/campaignConfig';
 import { ARMORY_ITEMS, DEFAULT_EQUIPPED_GEAR } from './game/armoryConfig';
+import {
+  DEFAULT_DRAKKAR_CUSTOMIZATION,
+  DEFAULT_UNLOCKED_NAVAL_ITEMS,
+  getNavalItemById,
+} from './game/navalArmoryConfig';
 import {
   GBP_CURRENCY_PACKS,
   INITIAL_GAMEPASSES,
@@ -411,6 +419,12 @@ export default function App() {
   const [caughtFishLog, setCaughtFishLog] = useState<CaughtFishRecord[]>([]);
   const [isPlayerNearWater, setIsPlayerNearWater] = useState(false);
 
+  // Drakkar Longship Naval Vessels Customization
+  const [drakkarCustomization, setDrakkarCustomization] = useState<DrakkarCustomization>(DEFAULT_DRAKKAR_CUSTOMIZATION);
+  const [unlockedNavalItems, setUnlockedNavalItems] = useState<string[]>(DEFAULT_UNLOCKED_NAVAL_ITEMS);
+  const drakkarCustomizationRef = useRef<DrakkarCustomization>(DEFAULT_DRAKKAR_CUSTOMIZATION);
+  drakkarCustomizationRef.current = drakkarCustomization;
+
   const [showArcheryHUD, setShowArcheryHUD] = useState(false);
   const [selectedArrow, setSelectedArrow] = useState<ArrowType>('bodkin');
   const [quiverStock, setQuiverStock] = useState<Record<ArrowType, number>>({
@@ -624,6 +638,77 @@ export default function App() {
           id: `gear_${Date.now()}`,
           sender: 'Armory',
           text: `Equipped ${item.name} (${item.perkDescription})`,
+          isSystem: true,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+    },
+    [addFloatingNumber]
+  );
+
+  // Spend Silver to customize Drakkar Longship in Naval Armory
+  const handlePurchaseNavalItem = useCallback(
+    (item: NavalCustomizationItem) => {
+      if (stats.silver < item.costSilver) {
+        addFloatingNumber(`Need ${item.costSilver - stats.silver} more Silver!`, '#ef4444', false, false);
+        return;
+      }
+
+      setStats((prev) => ({
+        ...prev,
+        silver: Math.max(0, prev.silver - item.costSilver),
+      }));
+
+      setUnlockedNavalItems((prev) => (prev.includes(item.id) ? prev : [...prev, item.id]));
+
+      setDrakkarCustomization((prev) => {
+        const next = { ...prev };
+        if (item.category === 'sail') next.sailId = item.id;
+        if (item.category === 'shields') next.shieldsId = item.id;
+        if (item.category === 'figurehead') next.figureheadId = item.id;
+        worldRef.current?.updateShipCustomization(next);
+        return next;
+      });
+
+      sound.playVictoryTriumph();
+      addFloatingNumber(`🪙 -${item.costSilver} Silver: Equipped ${item.name}!`, '#fbbf24', false, false);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `naval_${Date.now()}`,
+          sender: 'Naval Armory',
+          text: `Purchased and outfitted ${item.name} for ${item.costSilver} Silver onto your Drakkar longship!`,
+          isSystem: true,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+    },
+    [stats.silver, addFloatingNumber]
+  );
+
+  // Equip already-owned Naval Customization Item
+  const handleEquipNavalItem = useCallback(
+    (category: NavalCategory, itemId: string) => {
+      const item = getNavalItemById(itemId);
+      if (!item) return;
+
+      setDrakkarCustomization((prev) => {
+        const next = { ...prev };
+        if (category === 'sail') next.sailId = itemId;
+        if (category === 'shields') next.shieldsId = itemId;
+        if (category === 'figurehead') next.figureheadId = itemId;
+        worldRef.current?.updateShipCustomization(next);
+        return next;
+      });
+
+      sound.playShieldBlock();
+      addFloatingNumber(`⚓ Outfitted ${item.name} to Drakkar!`, '#38bdf8', false, false);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `naval_eq_${Date.now()}`,
+          sender: 'Naval Armory',
+          text: `Outfitted ${item.name} onto your Drakkar warship at Katfjord Pier.`,
           isSystem: true,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
@@ -2034,6 +2119,7 @@ export default function App() {
 
     const world = new VikingWorld(container);
     worldRef.current = world;
+    world.updateShipCustomization(drakkarCustomizationRef.current);
 
     const player = new CharacterController(world.scene);
     playerRef.current = player;
@@ -3279,6 +3365,7 @@ export default function App() {
           onSteer={(amt) => {
             if (worldRef.current) worldRef.current.shipRotation += amt;
           }}
+          onOpenArmory={() => setShowArmory(true)}
         />
       )}
 
@@ -3358,13 +3445,18 @@ export default function App() {
         />
       )}
 
-      {/* Viking Armory Point Milestone Modal */}
+      {/* Viking Armory Point Milestone & Naval Vessels Modal */}
       <ArmoryModal
         isOpen={showArmory}
         onClose={() => setShowArmory(false)}
         currentPoints={stats.valor}
         equippedGear={stats.equippedGear || DEFAULT_EQUIPPED_GEAR}
         onEquipItem={handleEquipItem}
+        silver={stats.silver}
+        drakkarCustomization={drakkarCustomization}
+        unlockedNavalItems={unlockedNavalItems}
+        onPurchaseNavalItem={handlePurchaseNavalItem}
+        onEquipNavalItem={handleEquipNavalItem}
       />
 
       {/* VIP Gamepasses, GBP Mint, Saga Pass & Daily Rune Wheel Modal */}

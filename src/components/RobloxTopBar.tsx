@@ -323,7 +323,7 @@ export const RobloxTopBar: React.FC<RobloxTopBarProps> = ({
                   ? 'bg-amber-600 text-white shadow-md ring-1 ring-amber-400'
                   : 'bg-neutral-800 hover:bg-neutral-700 text-amber-300 border border-amber-500/40'
               }`}
-              title="Warrior Armory: Shields, Weapons, Helmets (H)"
+              title="Armory & Naval Vessels: Customize Drakkar Longship, Shields, Weapons (H)"
             >
               <Shield className="w-3.5 h-3.5 text-amber-400" />
               <span className="hidden sm:inline">Armory</span>
@@ -693,7 +693,7 @@ export const RobloxTopBar: React.FC<RobloxTopBarProps> = ({
                 className="flex items-center gap-2 p-2 bg-neutral-900/90 hover:bg-neutral-800 rounded-xl border border-neutral-800 text-left text-xs font-medium cursor-pointer"
               >
                 <Shield className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>Armory Gear</span>
+                <span>Armory & Ships</span>
               </button>
             )}
             {onToggleGamepasses && (
