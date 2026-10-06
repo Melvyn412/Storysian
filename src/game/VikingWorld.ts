@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { BattleId, TycoonBuilding, DrakkarCustomization } from '../types';
+import { BattleId, TycoonBuilding, DrakkarCustomization, WindSailingStats } from '../types';
 import { sound } from '../audio/soundEngine';
 import { INITIAL_TYCOON_BUILDINGS } from './robloxFeaturesConfig';
 import { getNavalItemById, DEFAULT_DRAKKAR_CUSTOMIZATION } from './navalArmoryConfig';
@@ -48,6 +48,22 @@ export class VikingWorld {
   public shipSailGroup: THREE.Group = new THREE.Group();
   public shipShieldsGroup: THREE.Group = new THREE.Group();
   public currentShipCustomization: DrakkarCustomization = { ...DEFAULT_DRAKKAR_CUSTOMIZATION };
+
+  // Wind Dynamics & WebGL Sail Billowing Physics
+  public windAngle: number = 0.52; // Wind blowing towards angle (radians)
+  public windBaseSpeed: number = 18; // Knots
+  public windGustTime: number = 0;
+  public sailTackAngle: number = 0; // Current yard rotation (radians)
+  public sailBillowDepth: number = 2.8; // Current billow depth (meters)
+  public shipSailPlaneMesh: THREE.Mesh | null = null;
+  public shipSailYardMesh: THREE.Mesh | null = null;
+  public shipMastPennantGroup: THREE.Group | null = null;
+  public sailBasePositions: Float32Array | null = null;
+  public windStreamersGroup: THREE.Group | null = null;
+  public shipLeftSheet: THREE.Line | null = null;
+  public shipRightSheet: THREE.Line | null = null;
+  private sailNormalTimer: number = 0;
+
   public interactiveObjects: InteractiveObject[] = [];
   public placedBarricades: THREE.Mesh[] = [];
   public fireLights: THREE.PointLight[] = [];
@@ -768,19 +784,53 @@ export class VikingWorld {
     mast.castShadow = true;
     this.shipGroup.add(mast);
 
-    // Sail Yard Beam
-    const yard = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.4, 0.4, 18, 6),
-      new THREE.MeshStandardMaterial({ color: 0x3b2415 })
-    );
-    yard.rotation.z = Math.PI / 2;
-    yard.position.set(0, 18, 0);
-    this.shipGroup.add(yard);
-
     // Dynamic Drakkar Customization Groups (Sail patterns, Gunwale shields, Bow figureheads)
     this.shipGroup.add(this.shipFigureheadGroup);
     this.shipGroup.add(this.shipSailGroup);
     this.shipGroup.add(this.shipShieldsGroup);
+
+    // Masthead Wind Pennant & Bronze Vane (Viking Vejrfløj)
+    this.shipMastPennantGroup = new THREE.Group();
+    this.shipMastPennantGroup.position.set(0, 24.5, 0);
+    const vaneMount = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.18, 0.18, 1.4, 6),
+      new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.9, roughness: 0.2 })
+    );
+    this.shipMastPennantGroup.add(vaneMount);
+    const streamerGeo = new THREE.PlaneGeometry(3.6, 0.7, 8, 2);
+    const streamerMat = new THREE.MeshStandardMaterial({
+      color: 0xdc2626,
+      side: THREE.DoubleSide,
+      roughness: 0.8,
+    });
+    const streamerMesh = new THREE.Mesh(streamerGeo, streamerMat);
+    streamerMesh.position.set(0, 0.35, 1.8);
+    streamerMesh.rotation.y = Math.PI / 2;
+    this.shipMastPennantGroup.add(streamerMesh);
+    this.shipGroup.add(this.shipMastPennantGroup);
+
+    // Floating Wind Breeze Streamers over Fjord Waters
+    this.windStreamersGroup = new THREE.Group();
+    for (let i = 0; i < 20; i++) {
+      const lineGeo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(0, 0, 10),
+      ]);
+      const lineMat = new THREE.LineBasicMaterial({
+        color: 0xbae6fd,
+        transparent: true,
+        opacity: 0.4,
+      });
+      const line = new THREE.Line(lineGeo, lineMat);
+      line.position.set(
+        -90 + Math.random() * 220,
+        0.8 + Math.random() * 5.5,
+        -40 + Math.random() * 230
+      );
+      this.windStreamersGroup.add(line);
+    }
+    this.scene.add(this.windStreamersGroup);
+
     this.updateShipCustomization(this.currentShipCustomization);
 
     // Steering Helm
@@ -926,7 +976,7 @@ export class VikingWorld {
   public setTerritoryCaptured(captured: boolean) {
     if (!this.territoryFlagMesh) return;
     const mat = this.territoryFlagMesh.material as THREE.MeshStandardMaterial;
-    if (!mat || !mat.color) return;
+    if (!mat || !('color' in mat) || !mat.color) return;
     if (captured) {
       mat.color.setHex(0xfacc15);
       if (mat.emissive) mat.emissive.setHex(0xca8a04);
@@ -1214,58 +1264,270 @@ export class VikingWorld {
   }
 
   /**
+   * Procedural canvas texture generator for authentic Viking longship square sails
+   */
+  private createSailCanvasTexture(sailItem: any): THREE.CanvasTexture {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 384;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return new THREE.CanvasTexture(canvas);
+
+    const color1 = sailItem?.sailColor || '#cc2929';
+    const color2 = sailItem?.sailStripeColor || '#f8fafc';
+
+    // 8 vertical panels
+    const stripeW = canvas.width / 8;
+    for (let i = 0; i < 8; i++) {
+      ctx.fillStyle = i % 2 === 0 ? color1 : color2;
+      ctx.fillRect(i * stripeW, 0, stripeW, canvas.height);
+    }
+
+    // Realistic woven linen thread crosshatch
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
+    for (let y = 0; y < canvas.height; y += 4) {
+      ctx.fillRect(0, y, canvas.width, 1);
+    }
+    for (let x = 0; x < canvas.width; x += 4) {
+      ctx.fillRect(x, 0, 1, canvas.height);
+    }
+
+    // Border stitching and corner leather reinforcements
+    ctx.strokeStyle = '#27190e';
+    ctx.lineWidth = 8;
+    ctx.strokeRect(4, 4, canvas.width - 8, canvas.height - 8);
+
+    // Corner grommets
+    const grommets = [
+      [12, 12],
+      [canvas.width - 12, 12],
+      [12, canvas.height - 12],
+      [canvas.width - 12, canvas.height - 12],
+    ];
+    grommets.forEach(([gx, gy]) => {
+      ctx.fillStyle = '#78350f';
+      ctx.beginPath();
+      ctx.arc(gx, gy, 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#e2e8f0';
+      ctx.beginPath();
+      ctx.arc(gx, gy, 4, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Central runic emblem
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+    const emblem = sailItem?.sailEmblem || 'crossed_axes';
+
+    // Decorative emblem outer medallion ring
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 64, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 5;
+    ctx.stroke();
+
+    // Inner emblem drawing
+    ctx.fillStyle = '#fef08a';
+    ctx.strokeStyle = '#fef08a';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    if (emblem === 'raven') {
+      // Raven of Odin
+      ctx.beginPath();
+      ctx.arc(cx, cy - 14, 13, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(cx + 8, cy - 18);
+      ctx.lineTo(cx + 32, cy - 14);
+      ctx.lineTo(cx + 8, cy - 10);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + 10, 24, 16, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Wings spread
+      ctx.beginPath();
+      ctx.moveTo(cx - 15, cy);
+      ctx.quadraticCurveTo(cx - 48, cy - 24, cx - 40, cy + 14);
+      ctx.quadraticCurveTo(cx - 28, cy + 18, cx - 10, cy + 10);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(cx + 15, cy);
+      ctx.quadraticCurveTo(cx + 48, cy - 24, cx + 40, cy + 14);
+      ctx.quadraticCurveTo(cx + 28, cy + 18, cx + 10, cy + 10);
+      ctx.fill();
+    } else if (emblem === 'valkyrie_wings') {
+      // Golden Sunburst & Valkyrie wings
+      ctx.beginPath();
+      ctx.arc(cx, cy, 18, 0, Math.PI * 2);
+      ctx.fill();
+      for (let a = 0; a < Math.PI * 2; a += Math.PI / 6) {
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(a) * 22, cy + Math.sin(a) * 22);
+        ctx.lineTo(cx + Math.cos(a) * 44, cy + Math.sin(a) * 44);
+        ctx.stroke();
+      }
+    } else if (emblem === 'frost_snowflake') {
+      // Runic ice snowflake
+      for (let a = 0; a < Math.PI; a += Math.PI / 3) {
+        ctx.beginPath();
+        ctx.moveTo(cx - Math.cos(a) * 40, cy - Math.sin(a) * 40);
+        ctx.lineTo(cx + Math.cos(a) * 40, cy + Math.sin(a) * 40);
+        ctx.stroke();
+      }
+      ctx.beginPath();
+      ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (emblem === 'serpent_coil') {
+      // Midgard serpent coils
+      ctx.beginPath();
+      ctx.arc(cx, cy, 32, 0, Math.PI * 1.6);
+      ctx.lineWidth = 7;
+      ctx.strokeStyle = '#34d399';
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(cx, cy, 18, Math.PI * 0.8, Math.PI * 2.3);
+      ctx.stroke();
+    } else if (emblem === 'runic_skull') {
+      // Horned Norse skull
+      ctx.beginPath();
+      ctx.arc(cx, cy - 6, 20, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillRect(cx - 12, cy + 8, 24, 14);
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(cx - 7, cy - 6, 5, 0, Math.PI * 2);
+      ctx.arc(cx + 7, cy - 6, 5, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Crossed Viking battle axes
+      ctx.beginPath();
+      ctx.moveTo(cx - 28, cy + 28);
+      ctx.lineTo(cx + 28, cy - 28);
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = '#78350f';
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx + 28, cy + 28);
+      ctx.lineTo(cx - 28, cy - 28);
+      ctx.stroke();
+      ctx.fillStyle = '#cbd5e1';
+      ctx.beginPath();
+      ctx.arc(cx + 24, cy - 24, 11, 0, Math.PI);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(cx - 24, cy - 24, 11, 0, Math.PI);
+      ctx.fill();
+    }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.wrapS = THREE.ClampToEdgeWrapping;
+    tex.wrapT = THREE.ClampToEdgeWrapping;
+    return tex;
+  }
+
+  /**
+   * Calculate current wind and sailing efficiency metrics
+   */
+  public getWindSailingStats(): WindSailingStats {
+    let relWind = this.windAngle - this.shipRotation;
+    while (relWind > Math.PI) relWind -= Math.PI * 2;
+    while (relWind < -Math.PI) relWind += Math.PI * 2;
+
+    const absRel = Math.abs(relWind);
+    let pointOfSail = 'Running (Downwind)';
+    let windEfficiency = 1.0;
+
+    if (absRel < Math.PI * 0.28) {
+      pointOfSail = 'Running (Downwind)';
+      windEfficiency = 1.35;
+    } else if (absRel < Math.PI * 0.65) {
+      pointOfSail = 'Broad Reach (Crosswind)';
+      windEfficiency = 1.25;
+    } else if (absRel < Math.PI * 0.82) {
+      pointOfSail = 'Close-Hauled (Beating)';
+      windEfficiency = 0.75;
+    } else {
+      pointOfSail = 'In Irons (Headwind)';
+      windEfficiency = 0.35;
+    }
+
+    const gust = 1.0 + Math.sin(this.windGustTime * 1.5) * 0.15;
+    const knots = Math.round(this.windBaseSpeed * (this.weather === 'stormy' ? 1.5 : 1.0) * gust);
+
+    return {
+      windAngle: this.windAngle,
+      windSpeedKnots: knots,
+      relativeWindAngle: relWind,
+      windEfficiency,
+      pointOfSail,
+      tackAngle: this.sailTackAngle,
+      billowDepth: this.sailBillowDepth,
+    };
+  }
+
+  public getWindEfficiency(): number {
+    return this.getWindSailingStats().windEfficiency;
+  }
+
+  /**
    * Dynamically customize Drakkar Longship Sail patterns, Hull Gunwale shields, and Bow Figureheads
    */
   public updateShipCustomization(customization: DrakkarCustomization): void {
     this.currentShipCustomization = { ...customization };
     if (!this.shipGroup) return;
 
-    // 1. UPDATE SAIL PATTERN
+    // 1. UPDATE SAIL PATTERN & DEFORMABLE WEBGL BILLOWING MESH
     this.shipSailGroup.clear();
     const sailItem = getNavalItemById(customization.sailId) || getNavalItemById('sail_crimson_raider');
-    const sailColorHex = sailItem?.sailColor ? parseInt(sailItem.sailColor.replace('#', '0x'), 16) : 0xcc2929;
-    const stripeColorHex = sailItem?.sailStripeColor ? parseInt(sailItem.sailStripeColor.replace('#', '0x'), 16) : 0xf8fafc;
 
-    // Build authentic multi-striped vertical panels for Viking square sail
-    const sailWidth = 16;
-    const sailHeight = 12;
-    const stripeCount = 8;
-    const stripeWidth = sailWidth / stripeCount;
+    // Horizontal Sail Yard Beam at top of sail (Y = 18)
+    const yard = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.38, 0.42, 18, 8),
+      new THREE.MeshStandardMaterial({ color: 0x3b2415, roughness: 0.75 })
+    );
+    yard.rotation.z = Math.PI / 2;
+    yard.position.set(0, 18, 0);
+    yard.castShadow = true;
+    this.shipSailYardMesh = yard;
+    this.shipSailGroup.add(yard);
 
-    for (let i = 0; i < stripeCount; i++) {
-      const isEven = i % 2 === 0;
-      const stripeMat = new THREE.MeshStandardMaterial({
-        color: isEven ? sailColorHex : stripeColorHex,
-        roughness: 0.9,
-      });
-      const stripeMesh = new THREE.Mesh(new THREE.BoxGeometry(stripeWidth, sailHeight, 0.3), stripeMat);
-      stripeMesh.position.set(-sailWidth / 2 + stripeWidth / 2 + i * stripeWidth, 12, 0);
-      stripeMesh.castShadow = true;
-      this.shipSailGroup.add(stripeMesh);
-    }
+    // Deformable 3D Square Sail Plane (24 subdivisions x 16 subdivisions)
+    const sailGeo = new THREE.PlaneGeometry(16, 12, 24, 16);
+    this.sailBasePositions = sailGeo.attributes.position.array.slice() as Float32Array;
 
-    // Central Emblem or runic medallion on the sail
-    const emblemMat = new THREE.MeshStandardMaterial({
-      color: stripeColorHex,
-      metalness: 0.4,
-      roughness: 0.6,
-      emissive: sailItem?.rarity === 'mythic' || sailItem?.rarity === 'legendary' ? sailColorHex : 0x000000,
-      emissiveIntensity: 0.35,
+    const sailTexture = this.createSailCanvasTexture(sailItem);
+    const sailMat = new THREE.MeshStandardMaterial({
+      map: sailTexture,
+      roughness: 0.88,
+      metalness: 0.05,
+      side: THREE.DoubleSide,
+      shadowSide: THREE.DoubleSide,
     });
-    const emblemCenter = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 0.4, 12), emblemMat);
-    emblemCenter.rotation.x = Math.PI / 2;
-    emblemCenter.position.set(0, 12, 0.1);
-    this.shipSailGroup.add(emblemCenter);
+    const sailPlane = new THREE.Mesh(sailGeo, sailMat);
+    sailPlane.position.set(0, 12, 0);
+    sailPlane.castShadow = true;
+    this.shipSailPlaneMesh = sailPlane;
+    this.shipSailGroup.add(sailPlane);
 
-    // Diagonal runic crest crossbars
-    const bar1 = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.4, 0.42), emblemMat);
-    bar1.rotation.z = Math.PI / 4;
-    bar1.position.set(0, 12, 0.12);
-    this.shipSailGroup.add(bar1);
-    const bar2 = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.4, 0.42), emblemMat);
-    bar2.rotation.z = -Math.PI / 4;
-    bar2.position.set(0, 12, 0.12);
-    this.shipSailGroup.add(bar2);
+    // Dynamic Rigging Ropes (Braces & Sheets from yard and sail corners to deck)
+    const ropeMat = new THREE.LineBasicMaterial({ color: 0x27190e });
+    const leftSheet = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-8, 6, 0), new THREE.Vector3(-4.8, 3.6, -6)]),
+      ropeMat
+    );
+    this.shipLeftSheet = leftSheet;
+    this.shipSailGroup.add(leftSheet);
+    const rightSheet = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(8, 6, 0), new THREE.Vector3(4.8, 3.6, -6)]),
+      ropeMat
+    );
+    this.shipRightSheet = rightSheet;
+    this.shipSailGroup.add(rightSheet);
 
     // 2. UPDATE HULL SHIELDS
     this.shipShieldsGroup.clear();
@@ -2164,19 +2426,19 @@ export class VikingWorld {
       if (this.scene.background instanceof THREE.Color) {
         this.scene.background.copy(this.currentBgColor);
       }
-      if (this.scene.fog instanceof THREE.FogExp2) {
+      if (this.scene.fog instanceof THREE.FogExp2 && this.scene.fog.color) {
         this.scene.fog.color.copy(this.currentFogColor);
         this.scene.fog.density = this.currentFogDensity;
       }
-      if (this.sunLight) {
+      if (this.sunLight && this.sunLight.color) {
         this.sunLight.intensity = this.targetSunIntensity;
         this.sunLight.color.copy(this.targetSunColor);
       }
-      if (this.ambientLight) {
+      if (this.ambientLight && this.ambientLight.color) {
         this.ambientLight.intensity = this.targetAmbientIntensity;
         this.ambientLight.color.copy(this.targetAmbientColor);
       }
-      if (this.hemiLight) {
+      if (this.hemiLight && this.hemiLight.color) {
         this.hemiLight.intensity = this.targetHemiIntensity;
         this.hemiLight.color.copy(this.targetHemiSkyColor);
         this.hemiLight.groundColor.copy(this.targetHemiGroundColor);
@@ -2185,7 +2447,7 @@ export class VikingWorld {
   }
 
   /**
-   * Update animation loop (weather transition, particles, water, firelights, ship)
+   * Update animation loop (weather transition, particles, water, firelights, ship, sail billowing)
    */
   public update(delta: number) {
     const elapsed = this.clock.getElapsedTime();
@@ -2196,21 +2458,21 @@ export class VikingWorld {
     if (this.scene.background instanceof THREE.Color) {
       this.scene.background.copy(this.currentBgColor);
     }
-    if (this.scene.fog instanceof THREE.FogExp2) {
+    if (this.scene.fog instanceof THREE.FogExp2 && this.scene.fog.color) {
       this.currentFogColor.lerp(this.targetFogColor, lerpSpeed);
       this.scene.fog.color.copy(this.currentFogColor);
       this.currentFogDensity = THREE.MathUtils.lerp(this.currentFogDensity, this.targetFogDensity, lerpSpeed);
       this.scene.fog.density = this.currentFogDensity;
     }
-    if (this.sunLight) {
+    if (this.sunLight && this.sunLight.color) {
       this.sunLight.intensity = THREE.MathUtils.lerp(this.sunLight.intensity, this.targetSunIntensity, lerpSpeed);
       this.sunLight.color.lerp(this.targetSunColor, lerpSpeed);
     }
-    if (this.ambientLight) {
+    if (this.ambientLight && this.ambientLight.color) {
       this.ambientLight.intensity = THREE.MathUtils.lerp(this.ambientLight.intensity, this.targetAmbientIntensity, lerpSpeed);
       this.ambientLight.color.lerp(this.targetAmbientColor, lerpSpeed);
     }
-    if (this.hemiLight) {
+    if (this.hemiLight && this.hemiLight.color) {
       this.hemiLight.intensity = THREE.MathUtils.lerp(this.hemiLight.intensity, this.targetHemiIntensity, lerpSpeed);
       this.hemiLight.color.lerp(this.targetHemiSkyColor, lerpSpeed);
       this.hemiLight.groundColor.lerp(this.targetHemiGroundColor, lerpSpeed);
@@ -2335,11 +2597,11 @@ export class VikingWorld {
           if (this.scene.background instanceof THREE.Color) {
             this.scene.background.copy(this.currentBgColor);
           }
-          if (this.sunLight) {
+          if (this.sunLight && this.sunLight.color) {
             this.sunLight.intensity = this.targetSunIntensity;
             this.sunLight.color.copy(this.targetSunColor);
           }
-          if (this.ambientLight) {
+          if (this.ambientLight && this.ambientLight.color) {
             this.ambientLight.intensity = this.targetAmbientIntensity;
             this.ambientLight.color.copy(this.targetAmbientColor);
           }
@@ -2507,6 +2769,158 @@ export class VikingWorld {
           : 0.6;
         this.spawnSeaSpray(bowPos, sprayIntensity);
       }
+    }
+
+    // ==============================================================
+    // WIND DYNAMICS & WEBGL BILLOWING SAIL VERTEX ANIMATION
+    // ==============================================================
+    this.windGustTime += delta;
+    // Gentle natural drift in wind angle over time (oscillates naturally)
+    this.windAngle += Math.sin(elapsed * 0.04) * 0.012 * delta;
+
+    const windStats = this.getWindSailingStats();
+    const relWind = windStats.relativeWindAngle;
+    const absRel = Math.abs(relWind);
+    const gust = 1.0 + Math.sin(this.windGustTime * 1.5) * 0.15 + (this.weather === 'stormy' ? 0.35 : 0);
+
+    // 1. DYNAMIC YARD TACK ANGLE (Square-sail bracing based on wind heading)
+    let targetTack = 0;
+    if (absRel < Math.PI * 0.28) {
+      // Downwind (Running): Yard squared perpendicular across hull
+      targetTack = 0;
+    } else if (absRel < Math.PI * 0.65) {
+      // Crosswind (Broad Reach): Yard trimmed ~23 degrees to catch wind across beam
+      targetTack = (relWind > 0 ? 1 : -1) * 0.40;
+    } else if (absRel < Math.PI * 0.82) {
+      // Close-Hauled (Beating): Yard braced hard to side ~36 degrees
+      targetTack = (relWind > 0 ? 1 : -1) * 0.62;
+    } else {
+      // In Irons (Headwind): Flutters and quivers slightly around center
+      targetTack = Math.sin(elapsed * 6.5) * 0.05;
+    }
+
+    this.sailTackAngle = THREE.MathUtils.lerp(this.sailTackAngle, targetTack, delta * 3.5);
+    if (this.shipSailYardMesh) {
+      this.shipSailYardMesh.rotation.y = this.sailTackAngle;
+    }
+    if (this.shipSailPlaneMesh) {
+      this.shipSailPlaneMesh.rotation.y = this.sailTackAngle;
+    }
+
+    // 2. DYNAMIC BILLOW DEPTH
+    let targetBillow = 2.8 * gust;
+    if (absRel < Math.PI * 0.28) {
+      targetBillow = 3.5 * gust; // Deepest belly with full following wind
+    } else if (absRel < Math.PI * 0.65) {
+      targetBillow = 2.9 * gust; // Strong aerodynamic crosswind curve
+    } else if (absRel < Math.PI * 0.82) {
+      targetBillow = 1.6 * gust; // Shallow, taut belly
+    } else {
+      targetBillow = 0.25; // In Irons: deflated, flapping canvas
+    }
+    if (this.weather === 'stormy') {
+      targetBillow += 0.7;
+    }
+
+    this.sailBillowDepth = THREE.MathUtils.lerp(this.sailBillowDepth, targetBillow, delta * 4.0);
+
+    // 3. WEBGL VERTEX DEFORMATION ANIMATION ON SAIL MESH
+    if (this.shipSailPlaneMesh && this.sailBasePositions) {
+      const posAttr = this.shipSailPlaneMesh.geometry.attributes.position as THREE.BufferAttribute;
+      const pos = posAttr.array as Float32Array;
+      const base = this.sailBasePositions;
+      const vCount = pos.length / 3;
+      const isInIrons = absRel >= Math.PI * 0.82;
+
+      for (let i = 0; i < vCount; i++) {
+        const i3 = i * 3;
+        const bx = base[i3];
+        const by = base[i3 + 1];
+        const bz = base[i3 + 2];
+
+        // Sail dimensions: width 16 (bx in [-8, 8]), height 12 (by in [-6, 6])
+        const nx = bx / 8; // -1 to 1
+        const ny = (by - (-6)) / 12; // 0 (bottom sheet edge) to 1 (top yard attachment)
+
+        // Top edge attached to yard beam, displacement must be 0 at ny=1
+        const topRestraint = Math.max(0, 1 - Math.pow(ny, 1.6));
+        // Lateral arc profile (catenary curve, peak at center x=0)
+        const lateralArc = Math.max(0, 1 - nx * nx);
+        // Vertical belly profile: peak in lower-middle section
+        const verticalBelly = Math.sin(ny * Math.PI * 0.95);
+
+        if (isInIrons) {
+          // Luffing flutter (frantic small ripples from headwind)
+          const luffFreq = elapsed * 15;
+          const luff1 = Math.sin(luffFreq + bx * 1.5 + by * 1.1) * 0.35;
+          const luff2 = Math.cos(luffFreq * 1.4 + bx * 2.2) * 0.18;
+          const totalLuff = (luff1 + luff2) * topRestraint * (0.3 + 0.7 * lateralArc);
+
+          pos[i3] = bx + Math.sin(luffFreq * 0.7 + by) * 0.08 * topRestraint;
+          pos[i3 + 1] = by;
+          pos[i3 + 2] = bz - 0.25 * topRestraint + totalLuff;
+        } else {
+          // Dynamic wind billow with organic cloth ripples
+          const leewardShift = (relWind > 0 ? 0.22 : -0.22) * (1 - Math.abs(nx)) * topRestraint;
+          const ripple1 = Math.sin(elapsed * 7.0 + bx * 0.85 + by * 0.55) * 0.15;
+          const ripple2 = Math.cos(elapsed * 11.5 + bx * 1.3 - by * 0.75) * 0.07;
+          const clothRipple = (ripple1 + ripple2) * (0.25 + 0.75 * topRestraint);
+
+          const billowAmount = this.sailBillowDepth * topRestraint * lateralArc * verticalBelly;
+
+          pos[i3] = bx + leewardShift;
+          pos[i3 + 1] = by;
+          pos[i3 + 2] = bz + billowAmount + clothRipple;
+        }
+      }
+
+      posAttr.needsUpdate = true;
+
+      this.sailNormalTimer += delta;
+      if (this.sailNormalTimer > 0.05) {
+        this.sailNormalTimer = 0;
+        this.shipSailPlaneMesh.geometry.computeVertexNormals();
+      }
+
+      // Update dynamic rigging sheets
+      if (this.shipLeftSheet && this.shipRightSheet) {
+        const billowLead = this.sailBillowDepth * 0.35;
+        const leftSheetPos = this.shipLeftSheet.geometry.attributes.position as THREE.BufferAttribute;
+        (leftSheetPos.array as Float32Array)[2] = billowLead;
+        leftSheetPos.needsUpdate = true;
+
+        const rightSheetPos = this.shipRightSheet.geometry.attributes.position as THREE.BufferAttribute;
+        (rightSheetPos.array as Float32Array)[2] = billowLead;
+        rightSheetPos.needsUpdate = true;
+      }
+    }
+
+    // 4. MASTHEAD PENNANT & WIND VANE ALIGNMENT
+    if (this.shipMastPennantGroup) {
+      this.shipMastPennantGroup.rotation.y = THREE.MathUtils.lerp(
+        this.shipMastPennantGroup.rotation.y,
+        relWind,
+        delta * 5.0
+      );
+    }
+
+    // 5. FJORD WIND STREAMERS DRIFT
+    if (this.windStreamersGroup) {
+      const windDirX = Math.sin(this.windAngle);
+      const windDirZ = Math.cos(this.windAngle);
+      const streamerSpeed = (this.windBaseSpeed / 18) * 20 * delta;
+
+      this.windStreamersGroup.children.forEach((line) => {
+        line.position.x += windDirX * streamerSpeed;
+        line.position.z += windDirZ * streamerSpeed;
+        line.rotation.y = this.windAngle;
+
+        // Wrap around boundaries of the Katfjord bay
+        if (line.position.x > 140) line.position.x -= 240;
+        else if (line.position.x < -100) line.position.x += 240;
+        if (line.position.z > 200) line.position.z -= 250;
+        else if (line.position.z < -50) line.position.z += 250;
+      });
     }
   }
 

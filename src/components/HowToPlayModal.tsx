@@ -522,12 +522,12 @@ export const HowToPlayModal: React.FC<HowToPlayModalProps> = ({
                     </kbd>
                   </div>
                   <h4 className="text-base font-bold text-white mt-1">
-                    Multi-Crew Drakkar &amp; Jörmungandr Leviathan
+                    Multi-Crew Drakkar, Wind Physics &amp; Naval Armory
                   </h4>
                   <p className="text-xs text-neutral-300 mt-1 leading-relaxed">
-                    Board the Drakkar Longship at Katfjord Dock. Steer with WASD as Helm Captain or switch to
-                    Broadside Gunner and press [R] to fire 3D Frost-Ballista harpoons at the 1,800 HP Sea
-                    Serpent.
+                    Board the Drakkar Longship at Katfjord Dock (X:22, Z:85). Sail with live wind dynamics
+                    (downwind +35% speed boosts, tacking, and billowing sails), customize sails &amp; figureheads in
+                    the Naval Armory [H], or fire Frost-Ballistas [R] at the 1,800 HP Jörmungandr Sea Serpent.
                   </p>
                 </div>
                 <button

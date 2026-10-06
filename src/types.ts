@@ -79,6 +79,16 @@ export interface DrakkarCustomization {
   figureheadId: string;
 }
 
+export interface WindSailingStats {
+  windAngle: number;
+  windSpeedKnots: number;
+  relativeWindAngle: number;
+  windEfficiency: number;
+  pointOfSail: string;
+  tackAngle: number;
+  billowDepth: number;
+}
+
 export interface Quest {
   id: string;
   title: string;

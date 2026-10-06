@@ -24,7 +24,6 @@ import {
   Sparkles,
   Hammer,
   Flag,
-  PoundSterling,
   Radio,
   TreePine,
   HelpCircle,
@@ -209,19 +208,6 @@ export const RobloxTopBar: React.FC<RobloxTopBarProps> = ({
             </span>
             <span className="text-[10px] text-amber-200/70 font-semibold uppercase">Silver</span>
           </div>
-
-          {/* UK Sterling (£ GBP) Royal Wallet Balance Button */}
-          <button
-            onClick={onToggleGamepasses}
-            className="flex items-center gap-1 px-2.5 py-1 bg-emerald-950/90 hover:bg-emerald-900 rounded-full border border-emerald-500/50 shadow-inner transition cursor-pointer"
-            title="Open £ GBP Royal Mint & PayPal Store"
-          >
-            <PoundSterling className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="font-extrabold text-emerald-300 tabular-nums text-xs sm:text-sm font-mono">
-              £{gbpBalance.toFixed(2)}
-            </span>
-            <span className="text-[10px] text-emerald-200/80 font-bold uppercase">GBP</span>
-          </button>
         </div>
 
         {/* Right Action Icons: War Council, Armory, and Controls */}
@@ -340,10 +326,10 @@ export const RobloxTopBar: React.FC<RobloxTopBarProps> = ({
                   ? 'bg-emerald-500 text-neutral-950 shadow-md'
                   : 'bg-neutral-800 hover:bg-neutral-700 text-emerald-300 border border-emerald-500/50'
               }`}
-              title="£ GBP Store, VIP Gamepasses, Saga Pass & Daily Rune Wheel"
+              title="VIP Gamepasses, Saga Pass & Daily Rune Wheel"
             >
               <Crown className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden lg:inline">£ GBP & Passes</span>
+              <span className="hidden lg:inline">VIP & Passes</span>
             </button>
           )}
 

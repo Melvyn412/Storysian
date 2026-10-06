@@ -864,41 +864,49 @@ export class CharacterController {
   public setSkin(skin: AvatarSkin) {
     if (!skin) return;
 
-    if (this.headMesh && (this.headMesh.material as THREE.MeshStandardMaterial)?.color && skin.bodyColor) {
-      (this.headMesh.material as THREE.MeshStandardMaterial).color.set(skin.bodyColor);
+    if (this.headMesh && skin.bodyColor) {
+      const mat = this.headMesh.material as THREE.MeshStandardMaterial;
+      if (mat && 'color' in mat && mat.color) mat.color.set(skin.bodyColor);
     }
-    if (this.torsoMesh && (this.torsoMesh.material as THREE.MeshStandardMaterial)?.color && skin.shirtColor) {
-      (this.torsoMesh.material as THREE.MeshStandardMaterial).color.set(skin.shirtColor);
+    if (this.torsoMesh && skin.shirtColor) {
+      const mat = this.torsoMesh.material as THREE.MeshStandardMaterial;
+      if (mat && 'color' in mat && mat.color) mat.color.set(skin.shirtColor);
     }
-    if (this.leftArm?.children[0]) {
-      const mat = (this.leftArm.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial;
-      if (mat?.color && skin.shirtColor) mat.color.set(skin.shirtColor);
+    if (this.leftArm?.children?.[0] && skin.shirtColor) {
+      const mat = (this.leftArm.children[0] as THREE.Mesh)?.material as THREE.MeshStandardMaterial;
+      if (mat && 'color' in mat && mat.color) mat.color.set(skin.shirtColor);
     }
-    if (this.rightArm?.children[0]) {
-      const mat = (this.rightArm.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial;
-      if (mat?.color && skin.shirtColor) mat.color.set(skin.shirtColor);
+    if (this.rightArm?.children?.[0] && skin.shirtColor) {
+      const mat = (this.rightArm.children[0] as THREE.Mesh)?.material as THREE.MeshStandardMaterial;
+      if (mat && 'color' in mat && mat.color) mat.color.set(skin.shirtColor);
     }
-    if (this.leftLeg?.children[0]) {
-      const mat = (this.leftLeg.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial;
-      if (mat?.color && skin.pantsColor) mat.color.set(skin.pantsColor);
+    if (this.leftLeg?.children?.[0] && skin.pantsColor) {
+      const mat = (this.leftLeg.children[0] as THREE.Mesh)?.material as THREE.MeshStandardMaterial;
+      if (mat && 'color' in mat && mat.color) mat.color.set(skin.pantsColor);
     }
-    if (this.rightLeg?.children[0]) {
-      const mat = (this.rightLeg.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial;
-      if (mat?.color && skin.pantsColor) mat.color.set(skin.pantsColor);
+    if (this.rightLeg?.children?.[0] && skin.pantsColor) {
+      const mat = (this.rightLeg.children[0] as THREE.Mesh)?.material as THREE.MeshStandardMaterial;
+      if (mat && 'color' in mat && mat.color) mat.color.set(skin.pantsColor);
     }
     if (this.helmetGroup && skin.helmetColor) {
       this.helmetGroup.traverse((child) => {
         const mesh = child as THREE.Mesh;
-        if (mesh.isMesh && (mesh.material as THREE.MeshStandardMaterial)?.color) {
-          (mesh.material as THREE.MeshStandardMaterial).color.set(skin.helmetColor);
+        if (mesh && mesh.isMesh) {
+          const mat = mesh.material as THREE.MeshStandardMaterial;
+          if (mat && 'color' in mat && mat.color) {
+            mat.color.set(skin.helmetColor);
+          }
         }
       });
     }
     if (this.beardGroup && skin.beardColor) {
       this.beardGroup.traverse((child) => {
         const mesh = child as THREE.Mesh;
-        if (mesh.isMesh && (mesh.material as THREE.MeshStandardMaterial)?.color) {
-          (mesh.material as THREE.MeshStandardMaterial).color.set(skin.beardColor);
+        if (mesh && mesh.isMesh) {
+          const mat = mesh.material as THREE.MeshStandardMaterial;
+          if (mat && 'color' in mat && mat.color) {
+            mat.color.set(skin.beardColor);
+          }
         }
       });
     }

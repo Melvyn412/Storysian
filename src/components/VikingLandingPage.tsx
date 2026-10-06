@@ -246,19 +246,6 @@ export const VikingLandingPage: React.FC<VikingLandingPageProps> = ({
           {/* Zone 3: Actions & Controls */}
           <div className="flex items-center gap-3 shrink-0">
             <div className="hidden lg:flex items-center gap-3 text-xs text-neutral-400">
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  onOpenGamepasses?.();
-                }}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-950/90 border border-emerald-500/50 text-emerald-300 font-bold tabular-nums hover:bg-emerald-900 transition cursor-pointer"
-                title="Open £ GBP Royal Mint & PayPal Store"
-              >
-                <PoundSterling className="w-3.5 h-3.5 text-emerald-400" />
-                <span>£{currentGbpBalance.toFixed(2)} GBP</span>
-              </button>
-              <span aria-hidden="true" className="text-neutral-700">·</span>
               <span className="flex items-center gap-1 text-amber-300 font-semibold tabular-nums">
                 <Trophy className="w-3.5 h-3.5 text-amber-400" />
                 {currentValor.toLocaleString()} Valor Pts

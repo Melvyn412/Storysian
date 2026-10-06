@@ -1135,9 +1135,12 @@ export class RemotePlayerManager {
 
   private createTacticalPingMesh(ping: TacticalPingEvent): ActivePingMesh {
     const group = new THREE.Group();
-    group.position.set(ping.x, 3.2, ping.z);
+    const px = ping?.x ?? 0;
+    const pz = ping?.z ?? 0;
+    const pingColor = ping?.color || '#10b981';
+    group.position.set(px, 3.2, pz);
 
-    const col = new THREE.Color(ping.color || '#10b981');
+    const col = new THREE.Color(pingColor);
 
     const pillar = new THREE.Mesh(
       new THREE.CylinderGeometry(0.4, 0.9, 36, 12, 1, true),
@@ -1172,14 +1175,14 @@ export class RemotePlayerManager {
     ctx.beginPath();
     ctx.roundRect(16, 12, 480, 104, 16);
     ctx.fill();
-    ctx.strokeStyle = ping.color || '#10b981';
+    ctx.strokeStyle = pingColor;
     ctx.lineWidth = 4;
     ctx.stroke();
 
-    ctx.fillStyle = ping.color || '#10b981';
+    ctx.fillStyle = pingColor;
     ctx.font = 'bold 18px system-ui, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(`📯 TACTICAL PING • ${ping.senderName}`, 256, 48);
+    ctx.fillText(`📯 TACTICAL PING • ${ping?.senderName || 'Warband'}`, 256, 48);
 
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 24px system-ui, sans-serif';

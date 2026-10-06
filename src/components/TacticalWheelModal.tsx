@@ -135,7 +135,7 @@ export const TacticalWheelModal: React.FC<TacticalWheelModalProps> = ({
               <div className="flex items-start gap-3">
                 <div
                   className="p-2.5 rounded-lg bg-neutral-950 border border-neutral-800 shrink-0"
-                  style={{ color: cmd.color }}
+                  style={{ color: cmd?.color || '#38bdf8' }}
                 >
                   {cmd.id === 'attack_world_boss' && <Flame className="w-5 h-5" />}
                   {cmd.id === 'board_drakkar_ballista' && <Ship className="w-5 h-5" />}

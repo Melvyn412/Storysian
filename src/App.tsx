@@ -63,6 +63,7 @@ import {
   DrakkarCustomization,
   NavalCategory,
   NavalCustomizationItem,
+  WindSailingStats,
 } from './types';
 import { FishingManager } from './game/FishingManager';
 import { ArcheryManager } from './game/ArcheryManager';
@@ -419,9 +420,10 @@ export default function App() {
   const [caughtFishLog, setCaughtFishLog] = useState<CaughtFishRecord[]>([]);
   const [isPlayerNearWater, setIsPlayerNearWater] = useState(false);
 
-  // Drakkar Longship Naval Vessels Customization
+  // Drakkar Longship Naval Vessels Customization & Wind Physics
   const [drakkarCustomization, setDrakkarCustomization] = useState<DrakkarCustomization>(DEFAULT_DRAKKAR_CUSTOMIZATION);
   const [unlockedNavalItems, setUnlockedNavalItems] = useState<string[]>(DEFAULT_UNLOCKED_NAVAL_ITEMS);
+  const [windStats, setWindStats] = useState<WindSailingStats | null>(null);
   const drakkarCustomizationRef = useRef<DrakkarCustomization>(DEFAULT_DRAKKAR_CUSTOMIZATION);
   drakkarCustomizationRef.current = drakkarCustomization;
 
@@ -2518,9 +2520,15 @@ export default function App() {
       // Update world
       world.update(delta);
 
-      // Handle ship sailing controls if mounted
+      // Handle ship sailing controls if mounted (modulated by live wind and points of sail)
       if (world.isShipMounted) {
-        if (keysRef.current.forward) world.shipSpeed = Math.min(22, world.shipSpeed + 12 * delta);
+        const liveWind = world.getWindSailingStats();
+        // Dynamic speed based on wind efficiency!
+        // Downwind gives up to 1.35x speed (~29.7 kts), Crosswind 1.25x (~27.5 kts), Headwind (In Irons) reduces to 0.35x (~7.7 kts)
+        const maxForward = 22 * liveWind.windEfficiency;
+        const forwardAccel = 12 * (0.55 + 0.45 * liveWind.windEfficiency);
+
+        if (keysRef.current.forward) world.shipSpeed = Math.min(maxForward, world.shipSpeed + forwardAccel * delta);
         else if (keysRef.current.backward) world.shipSpeed = Math.max(-8, world.shipSpeed - 10 * delta);
         else world.shipSpeed = THREE.MathUtils.lerp(world.shipSpeed, 0, 2 * delta);
 
@@ -2529,6 +2537,7 @@ export default function App() {
 
         setShipSpeed(world.shipSpeed);
         setShipRotation(world.shipRotation);
+        setWindStats(liveWind);
 
         // Keep player anchored on ship deck as it rolls and pitches over waves
         if (world.shipGroup) {
@@ -3330,6 +3339,7 @@ export default function App() {
         <ShipControlHUD
           speed={shipSpeed}
           rotation={shipRotation}
+          windStats={windStats}
           isStormy={weather === 'stormy'}
           seaSerpent={seaSerpent}
           onFireBallista={(side) => {
@@ -3360,7 +3370,18 @@ export default function App() {
             setStats((prev) => ({ ...prev, isSailing: false }));
           }}
           onAccelerate={(amt) => {
-            if (worldRef.current) worldRef.current.shipSpeed += amt;
+            if (worldRef.current) {
+              const liveWind = worldRef.current.getWindSailingStats();
+              const maxSpd = 22 * liveWind.windEfficiency;
+              if (amt > 0) {
+                worldRef.current.shipSpeed = Math.min(
+                  maxSpd,
+                  worldRef.current.shipSpeed + amt * (0.6 + 0.4 * liveWind.windEfficiency)
+                );
+              } else {
+                worldRef.current.shipSpeed = Math.max(-8, worldRef.current.shipSpeed + amt);
+              }
+            }
           }}
           onSteer={(amt) => {
             if (worldRef.current) worldRef.current.shipRotation += amt;
@@ -4067,13 +4088,14 @@ export default function App() {
         meteorX={supplyDrop?.x ?? -14}
         meteorZ={supplyDrop?.z ?? 36}
         onSendTacticalPing={(cmd: TacticalCommandOption) => {
+          if (!cmd) return;
           if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
             wsRef.current.send(
               JSON.stringify({
                 type: 'tactical:ping',
                 commandId: cmd.id,
                 label: cmd.label,
-                color: cmd.color,
+                color: cmd.color || '#38bdf8',
                 x: cmd.x,
                 z: cmd.z,
                 senderName: stats.name,
