@@ -79,6 +79,7 @@ interface VikingLandingPageProps {
   onOpenBuilding?: () => void;
   onOpenConquest?: () => void;
   onEnterCrypt?: () => void;
+  onOpenDrakkarTour?: () => void;
   onlinePlayerCount?: number;
 }
 
@@ -112,6 +113,7 @@ export const VikingLandingPage: React.FC<VikingLandingPageProps> = ({
   onOpenBuilding,
   onOpenConquest,
   onEnterCrypt,
+  onOpenDrakkarTour,
   onlinePlayerCount = 1,
 }) => {
   const [selectedScenarioId, setSelectedScenarioId] = useState<BattleId>('frostfang_siege');
@@ -405,6 +407,17 @@ export const VikingLandingPage: React.FC<VikingLandingPageProps> = ({
                       >
                         <span>Free Roam Katfjord Village</span>
                       </button>
+
+                      {onOpenDrakkarTour && (
+                        <button
+                          onClick={onOpenDrakkarTour}
+                          className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-sky-950 via-neutral-900 to-sky-950 hover:bg-sky-900/60 border border-sky-500/60 text-sky-300 text-sm font-bold rounded-lg transition whitespace-nowrap cursor-pointer shadow-md"
+                          title="Interactive 3D cinematic tour of the Drakkar Longship at Katfjord Pier"
+                        >
+                          <Ship className="w-4 h-4 text-sky-400 animate-pulse" />
+                          <span>Drakkar Pier Tour</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

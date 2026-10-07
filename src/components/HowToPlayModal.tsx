@@ -24,6 +24,7 @@ interface HowToPlayModalProps {
       | 'multiplayer'
       | 'niflheim'
       | 'drakkar'
+      | 'drakkar_tour'
       | 'tactical_wheel'
       | 'armory'
       | 'weather'
@@ -530,16 +531,28 @@ export const HowToPlayModal: React.FC<HowToPlayModalProps> = ({
                     the Naval Armory [H], or fire Frost-Ballistas [R] at the 1,800 HP Jörmungandr Sea Serpent.
                   </p>
                 </div>
-                <button
-                  onClick={() => {
-                    onClose();
-                    onQuickAction?.('drakkar');
-                  }}
-                  className="w-full py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer"
-                >
-                  <Play className="w-3.5 h-3.5" />
-                  Board Drakkar &amp; Man Ballistas
-                </button>
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={() => {
+                      onClose();
+                      onQuickAction?.('drakkar_tour');
+                    }}
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-sky-600 to-amber-500 hover:from-sky-500 hover:to-amber-400 text-slate-950 font-black text-xs flex items-center justify-center gap-2 transition cursor-pointer shadow-md"
+                  >
+                    <Ship className="w-3.5 h-3.5" />
+                    Take 3D Drakkar Pier Tour [N]
+                  </button>
+                  <button
+                    onClick={() => {
+                      onClose();
+                      onQuickAction?.('drakkar');
+                    }}
+                    className="w-full py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer border border-neutral-700"
+                  >
+                    <Play className="w-3.5 h-3.5" />
+                    Board Drakkar &amp; Man Ballistas
+                  </button>
+                </div>
               </div>
 
               {/* Mode 3: Niflheim Underworld Dungeon */}

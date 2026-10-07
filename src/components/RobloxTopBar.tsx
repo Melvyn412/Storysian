@@ -30,6 +30,7 @@ import {
   Fish,
   Target,
   Skull,
+  Ship,
 } from 'lucide-react';
 import { WeatherCondition } from '../types';
 import { sound } from '../audio/soundEngine';
@@ -82,12 +83,13 @@ interface RobloxTopBarProps {
   showConquest?: boolean;
   onToggleConquest?: () => void;
   onEnterCrypt?: () => void;
+  showDrakkarTour?: boolean;
+  onToggleDrakkarTour?: () => void;
 }
 
 export const RobloxTopBar: React.FC<RobloxTopBarProps> = ({
   silver,
   valor = 0,
-  gbpBalance = 25.0,
   level,
   clan,
   isMuted,
@@ -132,6 +134,8 @@ export const RobloxTopBar: React.FC<RobloxTopBarProps> = ({
   showConquest,
   onToggleConquest,
   onEnterCrypt,
+  showDrakkarTour,
+  onToggleDrakkarTour,
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -297,6 +301,23 @@ export const RobloxTopBar: React.FC<RobloxTopBarProps> = ({
               <HelpCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               <span>How to Play</span>
               <span className="hidden xl:inline text-[9px] text-amber-200 font-mono">[?]</span>
+            </button>
+          )}
+
+          {/* Drakkar Longship Onboarding Showcase & Pier Tour Button (Desktop) */}
+          {onToggleDrakkarTour && (
+            <button
+              onClick={onToggleDrakkarTour}
+              className={`hidden md:flex items-center gap-1 px-1.5 sm:px-2.5 py-1 rounded transition text-xs font-bold shrink-0 cursor-pointer ${
+                showDrakkarTour
+                  ? 'bg-sky-500 text-neutral-950 shadow-md ring-1 ring-sky-300'
+                  : 'bg-sky-950/85 hover:bg-sky-900 text-sky-300 border border-sky-500/60'
+              }`}
+              title="Drakkar Longship Showcase & Pier Tour [N]"
+            >
+              <Ship className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+              <span>Drakkar Pier</span>
+              <span className="hidden xl:inline text-[9px] text-sky-200 font-mono">[N]</span>
             </button>
           )}
 
@@ -644,6 +665,28 @@ export const RobloxTopBar: React.FC<RobloxTopBarProps> = ({
                   </div>
                 </div>
                 <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wide">View</span>
+              </button>
+            )}
+
+            {/* Drakkar Longship Onboarding & Pier Tour */}
+            {onToggleDrakkarTour && (
+              <button
+                onClick={() => {
+                  onToggleDrakkarTour();
+                  setShowMobileMenu(false);
+                }}
+                className="w-full flex items-center justify-between p-2.5 bg-sky-950/70 hover:bg-sky-900 border border-sky-500/50 rounded-xl text-left transition cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-sky-500/20 border border-sky-400/30 flex items-center justify-center">
+                    <Ship className="w-4 h-4 text-sky-400" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-sky-300">Drakkar Pier Tour [N]</div>
+                    <div className="text-[10px] text-neutral-400">Warship Showcase &amp; Sails</div>
+                  </div>
+                </div>
+                <span className="text-[10px] font-bold text-sky-400 uppercase tracking-wide">Tour</span>
               </button>
             )}
 

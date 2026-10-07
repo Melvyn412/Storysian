@@ -304,13 +304,8 @@ export const GamepassStoreModal: React.FC<GamepassStoreModalProps> = ({
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Live Currencies Display: £ GBP Balance, Silver, Valor */}
+            {/* Live Currencies Display: Silver, Valor */}
             <div className="flex flex-wrap items-center gap-2.5 text-xs font-mono tabular-nums bg-neutral-950 px-3 py-1.5 rounded-xl border border-neutral-800">
-              <span className="flex items-center gap-1 text-emerald-400 font-bold" title="Your GBP (£) Royal Wallet Balance">
-                <PoundSterling className="w-3.5 h-3.5 text-emerald-400" />
-                {formatGBP(gbpWalletBalance)} GBP
-              </span>
-              <span className="text-neutral-700">·</span>
               <span className="flex items-center gap-1 text-amber-300 font-bold">
                 <Coins className="w-3.5 h-3.5 text-amber-400" />
                 {silver.toLocaleString()} Silver

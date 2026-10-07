@@ -77,11 +77,6 @@ export const PetsAndMountsModal: React.FC<PetsAndMountsModalProps> = ({
 
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3 text-xs font-mono tabular-nums text-neutral-200">
-              <span className="flex items-center gap-1 text-emerald-400 font-bold">
-                <PoundSterling className="w-3.5 h-3.5 text-emerald-400" />
-                £{gbpBalance.toFixed(2)} GBP
-              </span>
-              <span className="text-neutral-600">·</span>
               <span className="flex items-center gap-1 text-amber-300">
                 <Coins className="w-4 h-4 text-amber-400" />
                 {silver.toLocaleString()} Silver

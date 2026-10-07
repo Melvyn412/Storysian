@@ -125,6 +125,7 @@ import { FishingHUD } from './components/FishingHUD';
 import { ArcheryHUD } from './components/ArcheryHUD';
 import { BuildingHUD } from './components/BuildingHUD';
 import { ClanConquestHUD } from './components/ClanConquestHUD';
+import { DrakkarOnboardingModal } from './components/DrakkarOnboardingModal';
 
 const INITIAL_SKINS: AvatarSkin[] = [
   {
@@ -424,6 +425,7 @@ export default function App() {
   const [drakkarCustomization, setDrakkarCustomization] = useState<DrakkarCustomization>(DEFAULT_DRAKKAR_CUSTOMIZATION);
   const [unlockedNavalItems, setUnlockedNavalItems] = useState<string[]>(DEFAULT_UNLOCKED_NAVAL_ITEMS);
   const [windStats, setWindStats] = useState<WindSailingStats | null>(null);
+  const [showDrakkarOnboarding, setShowDrakkarOnboarding] = useState(false);
   const drakkarCustomizationRef = useRef<DrakkarCustomization>(DEFAULT_DRAKKAR_CUSTOMIZATION);
   drakkarCustomizationRef.current = drakkarCustomization;
 
@@ -1074,6 +1076,70 @@ export default function App() {
   );
   const handleTriggerSkillRef = useRef(handleTriggerSkill);
   handleTriggerSkillRef.current = handleTriggerSkill;
+
+  // Drakkar Longship Onboarding Showcase & Camera Director
+  const handleDrakkarCameraStep = useCallback((step: number) => {
+    if (!worldRef.current || !playerRef.current) return;
+    playerRef.current.isCinematicOverride = true;
+    worldRef.current.setPierWaypointActive(true);
+
+    if (step === 0) {
+      // Step 0: Katfjord Pier berth panoramic view of the majestic Drakkar
+      worldRef.current.setCinematicCamera(
+        new THREE.Vector3(38, 12, 118),
+        new THREE.Vector3(22, 3, 92)
+      );
+    } else if (step === 1) {
+      // Step 1: Aerodynamics & Billowing Sail close-up
+      worldRef.current.setCinematicCamera(
+        new THREE.Vector3(22, 13.5, 112),
+        new THREE.Vector3(22, 8.5, 95)
+      );
+    } else if (step === 2) {
+      // Step 2: Carved dragon figurehead & helm ballistas
+      worldRef.current.setCinematicCamera(
+        new THREE.Vector3(22, 5.8, 72),
+        new THREE.Vector3(22, 3.8, 86)
+      );
+    }
+  }, []);
+
+  const handleCloseDrakkarOnboarding = useCallback(() => {
+    setShowDrakkarOnboarding(false);
+    try {
+      localStorage.setItem('storysian_drakkar_onboarded_v1', 'true');
+    } catch {
+      // ignore
+    }
+    if (playerRef.current) {
+      playerRef.current.isCinematicOverride = false;
+    }
+    if (worldRef.current) {
+      worldRef.current.clearCinematicCamera();
+    }
+  }, []);
+
+  const handleDrakkarCameraStepRef = useRef(handleDrakkarCameraStep);
+  handleDrakkarCameraStepRef.current = handleDrakkarCameraStep;
+  const handleCloseDrakkarOnboardingRef = useRef(handleCloseDrakkarOnboarding);
+  handleCloseDrakkarOnboardingRef.current = handleCloseDrakkarOnboarding;
+
+  // Interactive Onboarding Sequence for New Players Joining
+  useEffect(() => {
+    try {
+      const onboarded = localStorage.getItem('storysian_drakkar_onboarded_v1');
+      if (!onboarded) {
+        const timer = setTimeout(() => {
+          setShowLandingPage(false);
+          setShowDrakkarOnboarding(true);
+          handleDrakkarCameraStep(0);
+        }, 1200);
+        return () => clearTimeout(timer);
+      }
+    } catch {
+      // ignore
+    }
+  }, [handleDrakkarCameraStep]);
 
   // Passive 1-Second Loop for Tycoon Income, Pet Healing, Territory Tribute & Skill Cooldowns
   useEffect(() => {
@@ -2320,6 +2386,19 @@ export default function App() {
         }
       }
 
+      // Drakkar Longship Onboarding Showcase & Pier Tour Key [N]
+      if (code === 'KeyN') {
+        setShowDrakkarOnboarding((prev) => {
+          const next = !prev;
+          if (next) {
+            handleDrakkarCameraStepRef.current(0);
+          } else {
+            handleCloseDrakkarOnboardingRef.current();
+          }
+          return next;
+        });
+      }
+
       // Leaderboard Tab Key
       if (code === 'Tab') {
         e.preventDefault();
@@ -2346,6 +2425,8 @@ export default function App() {
         setShowArcheryHUD(false);
         setShowBuildingHUD(false);
         setShowConquestHUD(false);
+        setShowDrakkarOnboarding(false);
+        handleCloseDrakkarOnboardingRef.current();
       }
     };
 
@@ -3134,7 +3215,6 @@ export default function App() {
       <RobloxTopBar
         silver={stats.silver}
         valor={stats.valor}
-        gbpBalance={gbpWalletBalance}
         level={stats.level}
         clan={stats.clan}
         isMuted={isMuted}
@@ -3152,6 +3232,18 @@ export default function App() {
         onToggleEmotes={() => setShowEmotes(!showEmotes)}
         showArmory={showArmory}
         onToggleArmory={() => setShowArmory(!showArmory)}
+        showDrakkarTour={showDrakkarOnboarding}
+        onToggleDrakkarTour={() => {
+          setShowDrakkarOnboarding((prev) => {
+            const next = !prev;
+            if (next) {
+              handleDrakkarCameraStep(0);
+            } else {
+              handleCloseDrakkarOnboarding();
+            }
+            return next;
+          });
+        }}
         onResetCharacter={handleRespawn}
         showLandingPage={showLandingPage}
         onToggleLandingPage={() => setShowLandingPage(!showLandingPage)}
@@ -4368,6 +4460,11 @@ export default function App() {
             addFloatingNumber('💀 Teleported to Ancient Draugr Crypt!', '#10b981', true);
           }
         }}
+        onOpenDrakkarTour={() => {
+          setShowLandingPage(false);
+          setShowDrakkarOnboarding(true);
+          handleDrakkarCameraStep(0);
+        }}
         onlinePlayerCount={remotePlayers.length + 1}
       />
 
@@ -4410,6 +4507,10 @@ export default function App() {
               sound.playWarHorn();
               addFloatingNumber('⚓ Boarded Drakkar! Press [R] for Frost-Ballistas', '#38bdf8', true);
             }
+          } else if (action === 'drakkar_tour') {
+            setShowHowToPlayModal(false);
+            setShowDrakkarOnboarding(true);
+            handleDrakkarCameraStep(0);
           } else if (action === 'tactical_wheel') {
             setShowTacticalWheel(true);
           } else if (action === 'armory') {
@@ -4423,6 +4524,36 @@ export default function App() {
             }
           }
         }}
+      />
+
+      {/* Interactive Drakkar Longship Showcase & Pier Onboarding Modal */}
+      <DrakkarOnboardingModal
+        isOpen={showDrakkarOnboarding}
+        onClose={handleCloseDrakkarOnboarding}
+        onBoardDrakkar={() => {
+          if (playerRef.current && worldRef.current) {
+            worldRef.current.isShipMounted = true;
+            setStats((prev) => ({ ...prev, isSailing: true }));
+            playerRef.current.position.set(22, 4, 85);
+            playerRef.current.velocity.set(0, 0, 0);
+            sound.playWarHorn();
+            addFloatingNumber('⚓ Boarded Drakkar Longship! Use [WASD] to Sail, [R] for Ballistas', '#38bdf8', true);
+          }
+          handleCloseDrakkarOnboarding();
+        }}
+        onOpenArmory={() => {
+          handleCloseDrakkarOnboarding();
+          setShowArmory(true);
+        }}
+        onTrackPierWaypoint={() => {
+          handleCloseDrakkarOnboarding();
+          if (worldRef.current) {
+            worldRef.current.setPierWaypointActive(true);
+          }
+          addFloatingNumber('🧭 Golden Light Beacon active at Katfjord Pier (X: 22, Z: 85)!', '#fbbf24', true);
+        }}
+        onCameraAngleChange={handleDrakkarCameraStep}
+        windStats={windStats || (worldRef.current ? worldRef.current.getWindSailingStats() : null)}
       />
 
       {/* 1. Fjord Fishing Mini-Game Modal */}

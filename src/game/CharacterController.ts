@@ -51,6 +51,7 @@ export class CharacterController {
   public cameraYaw: number = 0; // Horizontal angle
   public cameraShake: number = 0;
   public cameraMode: 'third_person' | 'close_look' | 'first_person' = 'third_person';
+  public isCinematicOverride: boolean = false;
 
   // Viking Head & Upper-Body Gaze Tracking
   public headYaw: number = 0;
@@ -1419,6 +1420,11 @@ export class CharacterController {
     const gazeDirX = -Math.sin(this.cameraYaw) * Math.cos(this.cameraPitch);
     const gazeDirY = -Math.sin(this.cameraPitch);
     const gazeDirZ = -Math.cos(this.cameraYaw) * Math.cos(this.cameraPitch);
+
+    if (this.isCinematicOverride) {
+      // Cinematic camera sequence active — camera controlled externally
+      return;
+    }
 
     if (isFirstPerson) {
       // First-Person Viking Eye View: positioned at eye level, looking freely up/down/around

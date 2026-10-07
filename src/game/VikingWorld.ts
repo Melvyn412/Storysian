@@ -64,6 +64,15 @@ export class VikingWorld {
   public shipRightSheet: THREE.Line | null = null;
   private sailNormalTimer: number = 0;
 
+  // Cinematic Camera & Drakkar Onboarding Showcase
+  public isCinematicActive: boolean = false;
+  public cinematicCamPos: THREE.Vector3 = new THREE.Vector3();
+  public cinematicCamTarget: THREE.Vector3 = new THREE.Vector3();
+  public targetCinematicPos: THREE.Vector3 = new THREE.Vector3();
+  public targetCinematicTarget: THREE.Vector3 = new THREE.Vector3();
+  public pierWaypointBeacon: THREE.Group | null = null;
+  public isTrackingPierWaypoint: boolean = false;
+
   public interactiveObjects: InteractiveObject[] = [];
   public placedBarricades: THREE.Mesh[] = [];
   public fireLights: THREE.PointLight[] = [];
@@ -883,6 +892,57 @@ export class VikingWorld {
       name: 'Viking Warship Drakkar',
       interactionPrompt: 'Press E to Mount/Steer Ship',
     });
+
+    // Glowing Golden Runic Beacon Pillar at Katfjord Pier for onboarding & waypoint guidance
+    this.pierWaypointBeacon = new THREE.Group();
+    this.pierWaypointBeacon.position.set(22, 1.5, 83);
+    this.pierWaypointBeacon.visible = false;
+
+    // Vertical ethereal golden beam of light
+    const beaconBeamMat = new THREE.MeshBasicMaterial({
+      color: 0xf59e0b,
+      transparent: true,
+      opacity: 0.45,
+      side: THREE.DoubleSide,
+    });
+    const beaconBeam = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.6, 1.6, 36, 16, 1, true),
+      beaconBeamMat
+    );
+    beaconBeam.position.y = 18;
+    this.pierWaypointBeacon.add(beaconBeam);
+
+    // Glowing concentric ground rings on wooden pier
+    const beaconRingMat = new THREE.MeshBasicMaterial({
+      color: 0xfbbf24,
+      transparent: true,
+      opacity: 0.85,
+      side: THREE.DoubleSide,
+    });
+    const beaconRing = new THREE.Mesh(
+      new THREE.RingGeometry(1.8, 2.4, 32),
+      beaconRingMat
+    );
+    beaconRing.rotation.x = -Math.PI / 2;
+    beaconRing.position.y = 0.2;
+    this.pierWaypointBeacon.add(beaconRing);
+
+    // Floating rotating runic diamond beacon marker
+    const beaconGlyphMat = new THREE.MeshStandardMaterial({
+      color: 0xfbbf24,
+      emissive: 0xd97706,
+      emissiveIntensity: 0.85,
+      metalness: 0.8,
+      roughness: 0.2,
+    });
+    const beaconGlyph = new THREE.Mesh(
+      new THREE.OctahedronGeometry(1.2, 0),
+      beaconGlyphMat
+    );
+    beaconGlyph.position.y = 3.8;
+    this.pierWaypointBeacon.add(beaconGlyph);
+
+    this.scene.add(this.pierWaypointBeacon);
   }
 
   /**
@@ -1472,6 +1532,32 @@ export class VikingWorld {
 
   public getWindEfficiency(): number {
     return this.getWindSailingStats().windEfficiency;
+  }
+
+  /**
+   * Smoothly moves the camera to cinematic showcase positions for onboarding
+   */
+  public setCinematicCamera(pos: THREE.Vector3, target: THREE.Vector3, instant = false): void {
+    this.isCinematicActive = true;
+    this.targetCinematicPos.copy(pos);
+    this.targetCinematicTarget.copy(target);
+    if (instant || this.cinematicCamPos.lengthSq() === 0) {
+      this.cinematicCamPos.copy(pos);
+      this.cinematicCamTarget.copy(target);
+      this.camera.position.copy(pos);
+      this.camera.lookAt(target);
+    }
+  }
+
+  public clearCinematicCamera(): void {
+    this.isCinematicActive = false;
+  }
+
+  public setPierWaypointActive(active: boolean): void {
+    this.isTrackingPierWaypoint = active;
+    if (this.pierWaypointBeacon) {
+      this.pierWaypointBeacon.visible = active;
+    }
   }
 
   /**
@@ -2476,6 +2562,21 @@ export class VikingWorld {
       this.hemiLight.intensity = THREE.MathUtils.lerp(this.hemiLight.intensity, this.targetHemiIntensity, lerpSpeed);
       this.hemiLight.color.lerp(this.targetHemiSkyColor, lerpSpeed);
       this.hemiLight.groundColor.lerp(this.targetHemiGroundColor, lerpSpeed);
+    }
+
+    // Cinematic Camera interpolation during Drakkar onboarding tour
+    if (this.isCinematicActive) {
+      this.cinematicCamPos.lerp(this.targetCinematicPos, delta * 3.5);
+      this.cinematicCamTarget.lerp(this.targetCinematicTarget, delta * 4.0);
+      this.camera.position.copy(this.cinematicCamPos);
+      this.camera.lookAt(this.cinematicCamTarget);
+    }
+
+    // Pier Waypoint Beacon rotation & pulse animation
+    if (this.pierWaypointBeacon && this.pierWaypointBeacon.visible) {
+      this.pierWaypointBeacon.rotation.y += 1.2 * delta;
+      const pulse = 1.0 + Math.sin(elapsed * 4.0) * 0.12;
+      this.pierWaypointBeacon.scale.set(pulse, 1.0, pulse);
     }
 
     // Update snowflake particles
