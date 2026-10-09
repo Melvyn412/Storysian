@@ -299,7 +299,7 @@ export interface VikingPet {
   count: number;
 }
 
-export type MountId = 'mount_war_bear' | 'mount_dire_wolf' | 'mount_sleipnir';
+export type MountId = 'mount_war_bear' | 'mount_dire_wolf' | 'mount_sleipnir' | 'mount_frost_drake';
 
 export interface VikingMount {
   id: MountId;
@@ -624,6 +624,74 @@ export interface ClanConquestTower {
   controllingClan: string | null;
   capturePercent: number; // 0 to 100
   isContested: boolean;
+}
+
+// 7. Saxon Coastal Fortress & Monastery Raids
+export interface SaxonFortRaidState {
+  isRaidActive: boolean;
+  gateHealth: number;
+  maxGateHealth: number;
+  gateBreached: boolean;
+  commanderDefeated: boolean;
+  chestsLooted: number;
+  maxChests: number;
+  relicsFound: string[];
+}
+
+// 8. Ghost Drakkar & Fjord Sea Hazards
+export interface GhostShipState {
+  isActive: boolean;
+  health: number;
+  maxHealth: number;
+  x: number;
+  z: number;
+  rotation: number;
+  speed: number;
+  isBoarded: boolean;
+  isCaptainSunk: boolean;
+}
+
+// 9. Katfjord Longhouse Mead Hall & Feasting Buffs
+export type FeastBuffType = 'boar_strength' | 'salmon_stamina' | 'honey_mead' | 'fly_agaric';
+
+export interface ActiveFeastBuff {
+  id: FeastBuffType;
+  name: string;
+  description: string;
+  icon: string;
+  expiresAt: number; // timestamp ms
+  durationSeconds: number;
+}
+
+// 10. Holmgang 1v1 Dueling Ring
+export interface HolmgangDuelState {
+  inDuel: boolean;
+  opponentName: string;
+  opponentTitle: string;
+  playerWins: number;
+  opponentWins: number;
+  playerHp: number;
+  opponentHp: number;
+  maxHp: number;
+  currentRound: number;
+  duelResult: 'ongoing' | 'victory' | 'defeat' | null;
+}
+
+// 11. Thor's Maelstrom Whirlpool Hazard & Salvage
+export interface MaelstromSalvageState {
+  distanceToEye: number;
+  inSuctionZone: boolean;
+  salvagedChests: number;
+  totalChests: number;
+  lastSalvagedItem: string | null;
+}
+
+// 12. Valhalla Sky Obby Valkyrie Glider
+export interface ValkyrieGliderState {
+  isGliding: boolean;
+  glideSpeed: number;
+  altitude: number;
+  wingsUnlocked: boolean;
 }
 
 

@@ -1,17 +1,19 @@
 import React from 'react';
-import { PlayerStats } from '../types';
-import { Heart, Zap, Trees, ShieldAlert, Sparkles } from 'lucide-react';
+import { PlayerStats, ActiveFeastBuff } from '../types';
+import { Heart, Zap, Trees, ShieldAlert, Sparkles, Flame } from 'lucide-react';
 
 interface PlayerHUDProps {
   stats: PlayerStats;
   interactionPrompt: string | null;
   damageFlash: boolean;
+  activeBuffs?: ActiveFeastBuff[];
 }
 
 export const PlayerHUD: React.FC<PlayerHUDProps> = ({
   stats,
   interactionPrompt,
   damageFlash,
+  activeBuffs = [],
 }) => {
   const healthPercent = Math.max(0, Math.min(100, (stats.health / stats.maxHealth) * 100));
   const staminaPercent = Math.max(0, Math.min(100, (stats.stamina / stats.maxStamina) * 100));
@@ -87,6 +89,25 @@ export const PlayerHUD: React.FC<PlayerHUDProps> = ({
               style={{ width: `${staminaPercent}%` }}
             />
           </div>
+
+          {/* Active Feast Buff Badges */}
+          {activeBuffs.length > 0 && (
+            <div className="pt-1 flex flex-wrap gap-1">
+              {activeBuffs.map((buff) => {
+                const rem = Math.max(0, Math.round((buff.expiresAt - Date.now()) / 1000));
+                return (
+                  <div
+                    key={buff.id}
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-950/80 border border-amber-500/50 text-[9px] text-amber-200 font-bold"
+                  >
+                    <Flame className="w-2.5 h-2.5 text-amber-400 animate-pulse" />
+                    <span className="truncate max-w-[80px]">{buff.name.split(' ')[0]}</span>
+                    <span className="font-mono text-amber-300 font-extrabold">{rem}s</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 

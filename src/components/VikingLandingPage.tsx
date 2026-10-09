@@ -37,6 +37,8 @@ import {
   TreePine,
   HelpCircle,
   Fish,
+  Waves,
+  UtensilsCrossed,
 } from 'lucide-react';
 import {
   BattleScenario,
@@ -80,6 +82,11 @@ interface VikingLandingPageProps {
   onOpenConquest?: () => void;
   onEnterCrypt?: () => void;
   onOpenDrakkarTour?: () => void;
+  onOpenSaxonRaid?: () => void;
+  onOpenGhostShip?: () => void;
+  onOpenMaelstrom?: () => void;
+  onOpenHolmgang?: () => void;
+  onOpenMeadHall?: () => void;
   onlinePlayerCount?: number;
 }
 
@@ -114,6 +121,11 @@ export const VikingLandingPage: React.FC<VikingLandingPageProps> = ({
   onOpenConquest,
   onEnterCrypt,
   onOpenDrakkarTour,
+  onOpenSaxonRaid,
+  onOpenGhostShip,
+  onOpenMaelstrom,
+  onOpenHolmgang,
+  onOpenMeadHall,
   onlinePlayerCount = 1,
 }) => {
   const [selectedScenarioId, setSelectedScenarioId] = useState<BattleId>('frostfang_siege');
@@ -647,6 +659,141 @@ export const VikingLandingPage: React.FC<VikingLandingPageProps> = ({
                         </h4>
                         <p className="text-[11px] text-neutral-400 mt-0.5 line-clamp-2">
                           Subterranean dungeon with skeletons, Crypt Lord boss &amp; loot.
+                        </p>
+                      </div>
+                    </button>
+                  )}
+
+                  {/* 9. Saxon Coastal Fortress & Monastery Raids */}
+                  {onOpenSaxonRaid && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        onOpenSaxonRaid();
+                      }}
+                      className="group p-3.5 rounded-xl bg-gradient-to-br from-amber-950/70 via-neutral-900 to-neutral-900 border border-amber-500/50 hover:border-amber-400 text-left transition-all shadow-md hover:shadow-amber-500/10 cursor-pointer flex flex-col justify-between gap-2.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-400/40 text-amber-300 text-[10px] font-extrabold uppercase tracking-wider">
+                          Monastery Raid
+                        </span>
+                        <Shield className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white group-hover:text-amber-200 transition-colors">
+                          Saxon Coastal Fortress Raid
+                        </h4>
+                        <p className="text-[11px] text-neutral-400 mt-0.5 line-clamp-2">
+                          Breach timber gates, defeat garrison &amp; plunder 3 holy relic chests.
+                        </p>
+                      </div>
+                    </button>
+                  )}
+
+                  {/* 10. Cursed Ghost Drakkar Naval Encounter */}
+                  {onOpenGhostShip && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        onOpenGhostShip();
+                      }}
+                      className="group p-3.5 rounded-xl bg-gradient-to-br from-emerald-950/70 via-neutral-900 to-neutral-900 border border-emerald-500/50 hover:border-emerald-400 text-left transition-all shadow-md hover:shadow-emerald-500/10 cursor-pointer flex flex-col justify-between gap-2.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[10px] font-extrabold uppercase tracking-wider">
+                          Naval Boss
+                        </span>
+                        <Ship className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform animate-pulse" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white group-hover:text-emerald-200 transition-colors">
+                          Cursed Ghost Drakkar
+                        </h4>
+                        <p className="text-[11px] text-neutral-400 mt-0.5 line-clamp-2">
+                          Spectral longship, Draugr Captain boss, board or bombard at sea.
+                        </p>
+                      </div>
+                    </button>
+                  )}
+
+                  {/* 11. Thor's Maelstrom Whirlpool Hazard */}
+                  {onOpenMaelstrom && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        onOpenMaelstrom();
+                      }}
+                      className="group p-3.5 rounded-xl bg-gradient-to-br from-sky-950/70 via-neutral-900 to-neutral-900 border border-sky-500/50 hover:border-sky-400 text-left transition-all shadow-md hover:shadow-sky-500/10 cursor-pointer flex flex-col justify-between gap-2.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="px-2 py-0.5 rounded bg-sky-500/20 border border-sky-400/40 text-sky-300 text-[10px] font-extrabold uppercase tracking-wider">
+                          Ocean Hazard
+                        </span>
+                        <Waves className="w-4 h-4 text-sky-400 group-hover:scale-110 transition-transform" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white group-hover:text-sky-200 transition-colors">
+                          Thor's Maelstrom &amp; Salvage
+                        </h4>
+                        <p className="text-[11px] text-neutral-400 mt-0.5 line-clamp-2">
+                          Swirling ocean vortex, suction currents &amp; sunken cargo salvage.
+                        </p>
+                      </div>
+                    </button>
+                  )}
+
+                  {/* 12. Holmgang 1v1 Consecrated Dueling Ring */}
+                  {onOpenHolmgang && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        onOpenHolmgang();
+                      }}
+                      className="group p-3.5 rounded-xl bg-gradient-to-br from-purple-950/70 via-neutral-900 to-neutral-900 border border-purple-500/50 hover:border-purple-400 text-left transition-all shadow-md hover:shadow-purple-500/10 cursor-pointer flex flex-col justify-between gap-2.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="px-2 py-0.5 rounded bg-purple-500/20 border border-purple-400/40 text-purple-300 text-[10px] font-extrabold uppercase tracking-wider">
+                          1v1 Honor Arena
+                        </span>
+                        <Swords className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white group-hover:text-purple-200 transition-colors">
+                          Holmgang 1v1 Dueling Ring
+                        </h4>
+                        <p className="text-[11px] text-neutral-400 mt-0.5 line-clamp-2">
+                          Challenge rival clan champions in the consecrated hazel stone ring.
+                        </p>
+                      </div>
+                    </button>
+                  )}
+
+                  {/* 13. Katfjord Longhouse Mead Hall Feast */}
+                  {onOpenMeadHall && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        onOpenMeadHall();
+                      }}
+                      className="group p-3.5 rounded-xl bg-gradient-to-br from-yellow-950/70 via-neutral-900 to-neutral-900 border border-yellow-500/50 hover:border-yellow-400 text-left transition-all shadow-md hover:shadow-yellow-500/10 cursor-pointer flex flex-col justify-between gap-2.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="px-2 py-0.5 rounded bg-yellow-500/20 border border-yellow-400/40 text-yellow-300 text-[10px] font-extrabold uppercase tracking-wider">
+                          Mead Banquet
+                        </span>
+                        <UtensilsCrossed className="w-4 h-4 text-yellow-400 group-hover:scale-110 transition-transform" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white group-hover:text-yellow-200 transition-colors">
+                          Mead Hall Feast &amp; SKÁL!
+                        </h4>
+                        <p className="text-[11px] text-neutral-400 mt-0.5 line-clamp-2">
+                          Roast wild boar, draughts of mead &amp; active Viking combat buffs.
                         </p>
                       </div>
                     </button>

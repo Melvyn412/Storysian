@@ -64,6 +64,12 @@ import {
   NavalCategory,
   NavalCustomizationItem,
   WindSailingStats,
+  SaxonFortRaidState,
+  GhostShipState,
+  MaelstromSalvageState,
+  HolmgangDuelState,
+  ActiveFeastBuff,
+  FeastBuffType,
 } from './types';
 import { FishingManager } from './game/FishingManager';
 import { ArcheryManager } from './game/ArcheryManager';
@@ -126,6 +132,11 @@ import { ArcheryHUD } from './components/ArcheryHUD';
 import { BuildingHUD } from './components/BuildingHUD';
 import { ClanConquestHUD } from './components/ClanConquestHUD';
 import { DrakkarOnboardingModal } from './components/DrakkarOnboardingModal';
+import { SaxonRaidHUD } from './components/SaxonRaidHUD';
+import { GhostShipHUD } from './components/GhostShipHUD';
+import { MaelstromSalvageHUD } from './components/MaelstromSalvageHUD';
+import { HolmgangDuelModal } from './components/HolmgangDuelModal';
+import { MeadHallFeastModal } from './components/MeadHallFeastModal';
 
 const INITIAL_SKINS: AvatarSkin[] = [
   {
@@ -457,6 +468,51 @@ export default function App() {
 
   const [showConquestHUD, setShowConquestHUD] = useState(false);
   const [conquestTowers, setConquestTowers] = useState<ClanConquestTower[]>(CONQUEST_TOWERS);
+
+  // 6 Exciting Viking Systems States:
+  // 1. Saxon Coastal Fortress & Monastery Raids
+  const [saxonRaidState, setSaxonRaidState] = useState<SaxonFortRaidState>({
+    isRaidActive: false,
+    gateHealth: 250,
+    maxGateHealth: 250,
+    gateBreached: false,
+    commanderDefeated: false,
+    chestsLooted: 0,
+    maxChests: 3,
+    relicsFound: [],
+  });
+  const [showSaxonRaidHUD, setShowSaxonRaidHUD] = useState(false);
+
+  // 2. Cursed Ghost Drakkar of Draugr Pirates
+  const [ghostShipState, setGhostShipState] = useState<GhostShipState>({
+    isActive: true,
+    health: 400,
+    maxHealth: 400,
+    x: -55,
+    z: 160,
+    rotation: 0,
+    speed: 3.5,
+    isBoarded: false,
+    isCaptainSunk: false,
+  });
+  const [showGhostShipHUD, setShowGhostShipHUD] = useState(false);
+
+  // 3. Thor's Maelstrom Whirlpool Hazard & Salvage
+  const [maelstromSalvageState, setMaelstromSalvageState] = useState<MaelstromSalvageState>({
+    distanceToEye: 999,
+    inSuctionZone: false,
+    salvagedChests: 0,
+    totalChests: 3,
+    lastSalvagedItem: null,
+  });
+  const [showMaelstromHUD, setShowMaelstromHUD] = useState(false);
+
+  // 4. Holmgang 1v1 Consecrated Dueling Ring
+  const [showHolmgangModal, setShowHolmgangModal] = useState(false);
+
+  // 5. Katfjord Longhouse Mead Hall Feast & Skál Buffs
+  const [showMeadHallModal, setShowMeadHallModal] = useState(false);
+  const [activeFeastBuffs, setActiveFeastBuffs] = useState<ActiveFeastBuff[]>([]);
 
   // Young Viking Meadow Sanctuary Realm & Forager Satchel State
   const [isYoungVikingMode, setIsYoungVikingMode] = useState(false);
@@ -1868,6 +1924,113 @@ export default function App() {
         }
       }
     }
+
+    // 1. Check Saxon Coastal Fortress Gate (38, 3.2, 204)
+    if (playerPos.distanceTo(new THREE.Vector3(38, 3.2, 204)) < 12) {
+      if (!saxonRaidState.gateBreached) {
+        sound.playGateBash();
+        const res = world.damageSaxonGate(50);
+        setSaxonRaidState((prev) => ({
+          ...prev,
+          gateHealth: res.currentHp,
+          gateBreached: res.breached,
+          isRaidActive: true,
+        }));
+        setShowSaxonRaidHUD(true);
+        if (res.breached) {
+          sound.playVictoryTriumph();
+          addFloatingNumber('💥 SAXON FORTRESS GATE BREACHED!', '#10b981', true);
+        } else {
+          addFloatingNumber(`🪓 GATE DAMAGED! ${res.currentHp} HP LEFT`, '#f97316');
+        }
+        return;
+      }
+    }
+
+    // Check Saxon Monastery Relic Chests
+    for (const rChest of world.saxonRelicChests) {
+      if (!rChest.looted && playerPos.distanceTo(new THREE.Vector3(40 + rChest.mesh.position.x, 3.5, 230 + rChest.mesh.position.z)) < 9) {
+        sound.playVictoryTriumph();
+        rChest.looted = true;
+        setSaxonRaidState((prev) => ({
+          ...prev,
+          chestsLooted: prev.chestsLooted + 1,
+          relicsFound: [...prev.relicsFound, rChest.id],
+        }));
+        setStats((prev) => ({
+          ...prev,
+          silver: prev.silver + 300,
+          valor: prev.valor + 200,
+        }));
+        addFloatingNumber(`👑 PLUNDERED: ${rChest.name} (+300 Silver & +200 Valor)!`, '#fbbf24', true);
+        setShowSaxonRaidHUD(true);
+        return;
+      }
+    }
+
+    // 2. Check Cursed Ghost Drakkar Boss (-55, 3.5, 151)
+    if (playerPos.distanceTo(new THREE.Vector3(-55, 3.5, 151)) < 14) {
+      if (!ghostShipState.isCaptainSunk) {
+        sound.playGhostHaunt();
+        const res = world.damageGhostShip(80);
+        setGhostShipState((prev) => ({
+          ...prev,
+          health: res.currentHp,
+          isCaptainSunk: res.sunk,
+          isBoarded: true,
+        }));
+        setShowGhostShipHUD(true);
+        if (res.sunk) {
+          sound.playVictoryTriumph();
+          setStats((prev) => ({
+            ...prev,
+            silver: prev.silver + 600,
+            valor: prev.valor + 450,
+          }));
+          addFloatingNumber('💀 CURSED DRAUGR CAPTAIN VANQUISHED! +600 Silver', '#10b981', true);
+        } else {
+          sound.playAxeSwing();
+          addFloatingNumber(`⚔️ STRUCK DRAUGR CAPTAIN! ${res.currentHp} HP LEFT`, '#34d399');
+        }
+        return;
+      }
+    }
+
+    // 3. Check Thor's Maelstrom Salvage Barrels
+    const maelstromDist = Math.hypot(-75 - playerPos.x, 125 - playerPos.z);
+    if (maelstromDist < 32) {
+      const remainingSalvage = 3 - maelstromSalvageState.salvagedChests;
+      if (remainingSalvage > 0) {
+        sound.playVictoryTriumph();
+        setMaelstromSalvageState((prev) => ({
+          ...prev,
+          salvagedChests: prev.salvagedChests + 1,
+          lastSalvagedItem: 'Sunken Cargo Strongbox',
+        }));
+        setStats((prev) => ({
+          ...prev,
+          silver: prev.silver + 180,
+          valor: prev.valor + 120,
+        }));
+        addFloatingNumber('🌊 MAELSTROM CARGO SALVAGED! +180 Silver & Sea Amber!', '#38bdf8', true);
+        setShowMaelstromHUD(true);
+        return;
+      }
+    }
+
+    // 4. Check Holmgang Consecrated 1v1 Ring (-36, 3.2, 48)
+    if (playerPos.distanceTo(new THREE.Vector3(-36, 3.2, 48)) < 10) {
+      sound.playWarHorn();
+      setShowHolmgangModal(true);
+      return;
+    }
+
+    // 5. Check Katfjord Longhouse Mead Hall Feast Table (0, 3.2, 0)
+    if (playerPos.distanceTo(new THREE.Vector3(0, 3.2, 0)) < 10) {
+      sound.playMeadChug();
+      setShowMeadHallModal(true);
+      return;
+    }
   }, [advanceQuest]);
 
   // Keep stable refs for event handlers to prevent Three.js scene remounting
@@ -3002,6 +3165,54 @@ export default function App() {
         }
       }
 
+      // 1. Thor's Maelstrom Whirlpool Hazard & Suction Physics
+      const maelstrom = world.getMaelstromSuction(player.position);
+      if (maelstrom.inZone) {
+        player.position.x += maelstrom.pullX * delta;
+        player.position.z += maelstrom.pullZ * delta;
+        setMaelstromSalvageState((prev) => ({
+          ...prev,
+          distanceToEye: maelstrom.distance,
+          inSuctionZone: true,
+        }));
+        if (!foundPrompt) {
+          foundPrompt = `⚠️ IN THOR'S MAELSTROM: Whirlpool Suction Active! [E] Salvage Cargo`;
+        }
+      } else if (maelstrom.distance < 60) {
+        setMaelstromSalvageState((prev) => ({
+          ...prev,
+          distanceToEye: maelstrom.distance,
+          inSuctionZone: false,
+        }));
+      }
+
+      // 2. Saxon Coastal Fortress Outpost Proximity (40, 3, 230)
+      if (!foundPrompt && Math.hypot(38 - player.position.x, 204 - player.position.z) < 12) {
+        foundPrompt = `[E] Attack Saxon Fortress Gate with Axe [1] or Ballistas [R]`;
+      }
+
+      // 3. Ghost Drakkar Boss Proximity (-55, 0, 160)
+      if (!foundPrompt && Math.hypot(-55 - player.position.x, 160 - player.position.z) < 22) {
+        foundPrompt = `[E] Board Ghost Drakkar Deck & Slay Draugr Captain`;
+      }
+
+      // 4. Holmgang Consecrated Ring (-36, 3.2, 48)
+      if (!foundPrompt && Math.hypot(-36 - player.position.x, 48 - player.position.z) < 9.5) {
+        foundPrompt = `[E] Enter Holmgang 1v1 Consecrated Dueling Ring`;
+      }
+
+      // 5. Katfjord Longhouse Mead Hall Feast Table (0, 3.2, 0)
+      if (!foundPrompt && Math.hypot(0 - player.position.x, 0 - player.position.z) < 9.5) {
+        foundPrompt = `[E] Feast at Katfjord Banquet Table (SKÁL!)`;
+      }
+
+      // Decay expired feast buffs
+      setActiveFeastBuffs((prev) => {
+        const now = Date.now();
+        const active = prev.filter((b) => b.expiresAt > now);
+        return active.length !== prev.length ? active : prev;
+      });
+
       setInteractionPrompt(foundPrompt);
 
       // Render
@@ -3388,6 +3599,7 @@ export default function App() {
         stats={stats}
         interactionPrompt={interactionPrompt}
         damageFlash={damageFlash}
+        activeBuffs={activeFeastBuffs}
       />
 
       {/* Roblox Hotbar (Slots 1-6) */}
@@ -4465,6 +4677,50 @@ export default function App() {
           setShowDrakkarOnboarding(true);
           handleDrakkarCameraStep(0);
         }}
+        onOpenSaxonRaid={() => {
+          setShowLandingPage(false);
+          setShowSaxonRaidHUD(true);
+          if (playerRef.current && worldRef.current) {
+            worldRef.current.isShipMounted = false;
+            setStats((prev) => ({ ...prev, isSailing: false }));
+            playerRef.current.position.set(40, 3.4, 210);
+            playerRef.current.velocity.set(0, 0, 0);
+            sound.playWarHorn();
+            addFloatingNumber('⚔️ Deployed to Saxon Coastal Outpost!', '#f59e0b', true);
+          }
+        }}
+        onOpenGhostShip={() => {
+          setShowLandingPage(false);
+          setShowGhostShipHUD(true);
+          if (playerRef.current && worldRef.current) {
+            worldRef.current.isShipMounted = true;
+            setStats((prev) => ({ ...prev, isSailing: true }));
+            playerRef.current.position.set(-45, 3.5, 145);
+            playerRef.current.velocity.set(0, 0, 0);
+            sound.playGhostHaunt();
+            addFloatingNumber('💀 Navigating to Cursed Ghost Drakkar Waters!', '#10b981', true);
+          }
+        }}
+        onOpenMaelstrom={() => {
+          setShowLandingPage(false);
+          setShowMaelstromHUD(true);
+          if (playerRef.current && worldRef.current) {
+            worldRef.current.isShipMounted = true;
+            setStats((prev) => ({ ...prev, isSailing: true }));
+            playerRef.current.position.set(-60, 3.5, 110);
+            playerRef.current.velocity.set(0, 0, 0);
+            sound.playThunder();
+            addFloatingNumber("🌊 Approaching Thor's Maelstrom Whirlpool!", '#38bdf8', true);
+          }
+        }}
+        onOpenHolmgang={() => {
+          setShowLandingPage(false);
+          setShowHolmgangModal(true);
+        }}
+        onOpenMeadHall={() => {
+          setShowLandingPage(false);
+          setShowMeadHallModal(true);
+        }}
         onlinePlayerCount={remotePlayers.length + 1}
       />
 
@@ -4828,6 +5084,211 @@ export default function App() {
             playerRef.current.velocity.set(0, 0, 0);
             addFloatingNumber(`🚩 Warped near ${tower.name}!`, '#fbbf24', true);
           }
+        }}
+      />
+
+      {/* 7. Saxon Coastal Fortress & Monastery Raid HUD */}
+      {showSaxonRaidHUD && (
+        <SaxonRaidHUD
+          raidState={saxonRaidState}
+          onAttackGate={() => {
+            if (worldRef.current) {
+              sound.playGateBash();
+              const res = worldRef.current.damageSaxonGate(50);
+              setSaxonRaidState((prev) => ({
+                ...prev,
+                gateHealth: res.currentHp,
+                gateBreached: res.breached,
+                isRaidActive: true,
+              }));
+              if (res.breached) {
+                sound.playVictoryTriumph();
+                addFloatingNumber('💥 SAXON FORTRESS GATE BREACHED!', '#10b981', true);
+              } else {
+                addFloatingNumber(`🪓 GATE DAMAGED! ${res.currentHp} HP LEFT`, '#f97316');
+              }
+            }
+          }}
+          onLootRelic={(relicId) => {
+            if (worldRef.current) {
+              const rChest = worldRef.current.saxonRelicChests.find((r) => r.id === relicId);
+              if (rChest && !rChest.looted) {
+                sound.playVictoryTriumph();
+                rChest.looted = true;
+                setSaxonRaidState((prev) => ({
+                  ...prev,
+                  chestsLooted: prev.chestsLooted + 1,
+                  relicsFound: [...prev.relicsFound, relicId],
+                }));
+                setStats((prev) => ({
+                  ...prev,
+                  silver: prev.silver + 300,
+                  valor: prev.valor + 200,
+                }));
+                addFloatingNumber(`👑 PLUNDERED: ${rChest.name} (+300 Silver & +200 Valor)!`, '#fbbf24', true);
+              }
+            }
+          }}
+          onTeleportToFort={() => {
+            if (playerRef.current && worldRef.current) {
+              worldRef.current.isShipMounted = false;
+              setStats((prev) => ({ ...prev, isSailing: false }));
+              playerRef.current.position.set(40, 3.4, 210);
+              playerRef.current.velocity.set(0, 0, 0);
+              sound.playWarHorn();
+              addFloatingNumber('⚔️ Warped to Saxon Fortress Outpost!', '#f59e0b', true);
+            }
+          }}
+          onClose={() => setShowSaxonRaidHUD(false)}
+        />
+      )}
+
+      {/* 8. Cursed Ghost Drakkar Naval Encounter HUD */}
+      {showGhostShipHUD && (
+        <GhostShipHUD
+          ghostShip={ghostShipState}
+          playerPos={playerRef.current ? { x: playerRef.current.position.x, z: playerRef.current.position.z } : { x: 0, z: 0 }}
+          onFireShipBallista={() => {
+            if (worldRef.current) {
+              sound.playAxeSwing();
+              const res = worldRef.current.damageGhostShip(60);
+              setGhostShipState((prev) => ({
+                ...prev,
+                health: res.currentHp,
+                isCaptainSunk: res.sunk,
+              }));
+              if (res.sunk) {
+                sound.playVictoryTriumph();
+                setStats((prev) => ({
+                  ...prev,
+                  silver: prev.silver + 600,
+                  valor: prev.valor + 450,
+                }));
+                addFloatingNumber('💀 CURSED GHOST SHIP SUNK! +600 Silver', '#10b981', true);
+              } else {
+                addFloatingNumber(`🎯 BALLISTA HIT GHOST HULL! ${res.currentHp} HP LEFT`, '#34d399');
+              }
+            }
+          }}
+          onBoardGhostShip={() => {
+            if (playerRef.current && worldRef.current) {
+              worldRef.current.isShipMounted = false;
+              setStats((prev) => ({ ...prev, isSailing: false }));
+              playerRef.current.position.set(-55, 3.5, 151);
+              playerRef.current.velocity.set(0, 0, 0);
+              sound.playGhostHaunt();
+              addFloatingNumber('💀 Boarded Ghost Drakkar Deck! Defeat Draugr Captain!', '#10b981', true);
+            }
+          }}
+          onTeleportToGhostShip={() => {
+            if (playerRef.current && worldRef.current) {
+              worldRef.current.isShipMounted = true;
+              setStats((prev) => ({ ...prev, isSailing: true }));
+              playerRef.current.position.set(-45, 3.5, 145);
+              playerRef.current.velocity.set(0, 0, 0);
+              sound.playGhostHaunt();
+              addFloatingNumber('💀 Sailed into Ghost Drakkar Waters!', '#10b981', true);
+            }
+          }}
+          onClose={() => setShowGhostShipHUD(false)}
+        />
+      )}
+
+      {/* 9. Thor's Maelstrom Whirlpool Hazard & Salvage HUD */}
+      {showMaelstromHUD && (
+        <MaelstromSalvageHUD
+          salvageState={maelstromSalvageState}
+          onSalvageCargo={() => {
+            if (maelstromSalvageState.salvagedChests < 3) {
+              sound.playVictoryTriumph();
+              setMaelstromSalvageState((prev) => ({
+                ...prev,
+                salvagedChests: prev.salvagedChests + 1,
+              }));
+              setStats((prev) => ({
+                ...prev,
+                silver: prev.silver + 180,
+                valor: prev.valor + 120,
+              }));
+              addFloatingNumber('🌊 CARGO SALVAGED! +180 Silver & Sea Amber', '#38bdf8', true);
+            }
+          }}
+          onEscapeVortex={() => {
+            if (playerRef.current) {
+              playerRef.current.velocity.set(0, 8, 25);
+              sound.playFanfare();
+              addFloatingNumber('⚡ BROKE FREE FROM MAELSTROM SUCTION!', '#38bdf8', true);
+            }
+          }}
+          onTeleportToMaelstrom={() => {
+            if (playerRef.current && worldRef.current) {
+              worldRef.current.isShipMounted = true;
+              setStats((prev) => ({ ...prev, isSailing: true }));
+              playerRef.current.position.set(-60, 3.5, 110);
+              playerRef.current.velocity.set(0, 0, 0);
+              sound.playThunder();
+              addFloatingNumber("🌊 Sailed into Thor's Maelstrom perimeter!", '#38bdf8', true);
+            }
+          }}
+          onClose={() => setShowMaelstromHUD(false)}
+        />
+      )}
+
+      {/* 10. Holmgang 1v1 Consecrated Dueling Ring Modal */}
+      <HolmgangDuelModal
+        isOpen={showHolmgangModal}
+        onClose={() => setShowHolmgangModal(false)}
+        silver={stats.silver}
+        valor={stats.valor}
+        onDuelVictory={(rewardSilver, rewardValor, opponentName) => {
+          sound.playVictoryTriumph();
+          setStats((prev) => ({
+            ...prev,
+            silver: prev.silver + rewardSilver,
+            valor: prev.valor + rewardValor,
+            level: Math.floor((prev.valor + rewardValor) / 200) + 1,
+          }));
+          addFloatingNumber(`👑 HOLMGANG VICTOR OVER ${opponentName.toUpperCase()}! +${rewardSilver} Silver & +${rewardValor} Valor`, '#facc15', true);
+        }}
+      />
+
+      {/* 11. Katfjord Longhouse Mead Hall Feast Modal */}
+      <MeadHallFeastModal
+        isOpen={showMeadHallModal}
+        onClose={() => setShowMeadHallModal(false)}
+        silver={stats.silver}
+        activeBuffs={activeFeastBuffs}
+        onConsumeFeast={(dishId, name, durationSeconds) => {
+          setStats((prev) => ({
+            ...prev,
+            silver: Math.max(0, prev.silver - 60),
+            health: Math.min(prev.maxHealth, prev.health + 40),
+          }));
+          const expiresAt = Date.now() + durationSeconds * 1000;
+          setActiveFeastBuffs((prev) => {
+            const filtered = prev.filter((b) => b.id !== dishId);
+            return [
+              ...filtered,
+              {
+                id: dishId,
+                name,
+                description: 'Active feast blessing',
+                icon: dishId,
+                expiresAt,
+                durationSeconds,
+              },
+            ];
+          });
+          sound.playFanfare();
+          addFloatingNumber(`🍖 FEASTED: ${name.toUpperCase()}! Active for 3 min!`, '#fbbf24', true);
+        }}
+        onSkalToast={() => {
+          setStats((prev) => ({
+            ...prev,
+            health: Math.min(prev.maxHealth, prev.health + 20),
+            stamina: 100,
+          }));
+          addFloatingNumber('🍻 SKÁL! Health & Stamina Restored!', '#facc15', true);
         }}
       />
     </div>

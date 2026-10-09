@@ -76,6 +76,32 @@ export class VikingWorld {
   public interactiveObjects: InteractiveObject[] = [];
   public placedBarricades: THREE.Mesh[] = [];
   public fireLights: THREE.PointLight[] = [];
+
+  // 1. Saxon Coastal Fortress & Monastery Raids
+  public saxonGateMesh: THREE.Mesh | null = null;
+  public saxonGateHealth: number = 250;
+  public saxonGateMaxHealth: number = 250;
+  public saxonGateBreached: boolean = false;
+  public saxonRelicChests: { id: string; mesh: THREE.Mesh; looted: boolean; name: string }[] = [];
+
+  // 2. Cursed Ghost Drakkar of Draugr Pirates
+  public ghostShipGroup: THREE.Group | null = null;
+  public ghostShipHealth: number = 400;
+  public ghostShipMaxHealth: number = 400;
+  public ghostShipAngle: number = 0;
+  public ghostShipSunk: boolean = false;
+  public ghostShipBoarded: boolean = false;
+  public ghostShipLanternLight: THREE.PointLight | null = null;
+
+  // 3. Thor's Maelstrom Whirlpool
+  public maelstromGroup: THREE.Group | null = null;
+
+  // 4. Holmgang Consecrated Dueling Ring
+  public holmgangRingMesh: THREE.Mesh | null = null;
+
+  // 5. Katfjord Longhouse Mead Hall Feast Table
+  public feastTableMesh: THREE.Mesh | null = null;
+
   private clock: THREE.Clock;
   private animId: number = 0;
   public isShipMounted: boolean = false;
@@ -203,6 +229,10 @@ export class VikingWorld {
     this.buildVegetationAndOre();
     this.buildVikingLongship();
     this.buildRivalOutpost();
+    this.buildGhostShip();
+    this.buildThorMaelstrom();
+    this.buildHolmgangArena();
+    this.buildMeadHallFeastTable();
     this.buildSkyObbyCourse();
     this.buildTycoonPlot();
     this.buildSnowParticles();
@@ -985,7 +1015,84 @@ export class VikingWorld {
     chest.castShadow = true;
     outpostGroup.add(chest);
 
+    // 1. Saxon Coastal Fortress Gate (Chop down with axe or smash with ship ballistas)
+    const gateGroup = new THREE.Group();
+    gateGroup.position.set(-2, 0, -26); // Outpost entrance near shore
+    const postMat = new THREE.MeshStandardMaterial({ color: 0x382215, roughness: 0.9 });
+    const postL = new THREE.Mesh(new THREE.BoxGeometry(1.8, 9, 1.8), postMat);
+    postL.position.set(-6, 4.5, 0);
+    gateGroup.add(postL);
+    const postR = new THREE.Mesh(new THREE.BoxGeometry(1.8, 9, 1.8), postMat);
+    postR.position.set(6, 4.5, 0);
+    gateGroup.add(postR);
+
+    this.saxonGateMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(10.5, 7.5, 1.2),
+      new THREE.MeshStandardMaterial({ color: 0x5c3317, roughness: 0.85 })
+    );
+    this.saxonGateMesh.position.set(0, 3.75, 0);
+    this.saxonGateMesh.castShadow = true;
+    gateGroup.add(this.saxonGateMesh);
+
+    // Iron reinforcement bars
+    for (let y = 1.6; y <= 5.8; y += 2.0) {
+      const ironBand = new THREE.Mesh(
+        new THREE.BoxGeometry(10.6, 0.4, 1.35),
+        new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85 })
+      );
+      ironBand.position.set(0, y, 0);
+      gateGroup.add(ironBand);
+    }
+    outpostGroup.add(gateGroup);
+
+    // 2. Three Saxon Monastery Relic Chests around the fortress
+    const relicData = [
+      { id: 'saxon_relic_cross', name: "St. Cuthbert's Golden Cross", pos: new THREE.Vector3(12, 1, 6), color: 0xfacc15 },
+      { id: 'saxon_relic_chalice', name: 'Saxon Monastic Chalice', pos: new THREE.Vector3(-14, 1, 8), color: 0xe2e8f0 },
+      { id: 'saxon_relic_gospels', name: 'Lindisfarne Holy Gospels', pos: new THREE.Vector3(2, 1, 16), color: 0x9333ea },
+    ];
+
+    this.saxonRelicChests = [];
+    relicData.forEach((r) => {
+      const rChest = new THREE.Mesh(
+        new THREE.BoxGeometry(2.4, 1.6, 1.8),
+        new THREE.MeshStandardMaterial({ color: r.color, metalness: 0.8, roughness: 0.25 })
+      );
+      rChest.position.copy(r.pos);
+      rChest.castShadow = true;
+      outpostGroup.add(rChest);
+
+      this.saxonRelicChests.push({
+        id: r.id,
+        mesh: rChest,
+        looted: false,
+        name: r.name,
+      });
+
+      this.interactiveObjects.push({
+        id: r.id,
+        type: 'chest',
+        mesh: rChest,
+        position: new THREE.Vector3(40 + r.pos.x, 3 + r.pos.y, 230 + r.pos.z),
+        health: 100,
+        maxHealth: 100,
+        name: r.name,
+        interactionPrompt: `Press E to Plunder ${r.name}`,
+      });
+    });
+
     this.scene.add(outpostGroup);
+
+    this.interactiveObjects.push({
+      id: 'saxon_fortress_gate',
+      type: 'chest',
+      mesh: this.saxonGateMesh,
+      position: new THREE.Vector3(38, 3.2, 204),
+      health: this.saxonGateHealth,
+      maxHealth: this.saxonGateMaxHealth,
+      name: 'Saxon Fortress Gate [Breachable]',
+      interactionPrompt: 'Attack Gate with Axe [1] or Ship Ballistas [R]',
+    });
 
     this.interactiveObjects.push({
       id: 'relic_chest',
@@ -1031,6 +1138,321 @@ export class VikingWorld {
       name: 'Frostfang Territory Banner',
       interactionPrompt: 'Press E to Capture Territory for Clan (+Honor)',
     });
+  }
+
+  /**
+   * Cursed Ghost Drakkar of Draugr Pirates (Ethereal Naval Encounter)
+   */
+  private buildGhostShip() {
+    this.ghostShipGroup = new THREE.Group();
+    this.ghostShipGroup.position.set(-55, -0.6, 160);
+
+    const ghostMat = new THREE.MeshStandardMaterial({
+      color: 0x10b981,
+      transparent: true,
+      opacity: 0.72,
+      emissive: 0x059669,
+      emissiveIntensity: 0.45,
+      roughness: 0.3,
+    });
+    const ghostTrimMat = new THREE.MeshStandardMaterial({
+      color: 0x064e3b,
+      transparent: true,
+      opacity: 0.8,
+      emissive: 0x047857,
+      emissiveIntensity: 0.35,
+    });
+
+    // Hull
+    const hull = new THREE.Mesh(new THREE.BoxGeometry(9, 4.2, 30), ghostMat);
+    hull.position.set(0, 2.1, 0);
+    this.ghostShipGroup.add(hull);
+
+    // Spectral Mast & Tattered Sail
+    const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.45, 20, 8), ghostTrimMat);
+    mast.position.set(0, 10, 0);
+    this.ghostShipGroup.add(mast);
+
+    const sail = new THREE.Mesh(
+      new THREE.BoxGeometry(18, 12, 0.15),
+      new THREE.MeshStandardMaterial({
+        color: 0x34d399,
+        transparent: true,
+        opacity: 0.65,
+        emissive: 0x059669,
+        emissiveIntensity: 0.5,
+      })
+    );
+    sail.position.set(0, 11, 0.4);
+    this.ghostShipGroup.add(sail);
+
+    // Glowing Green Lantern at Bow
+    const lantern = new THREE.Mesh(
+      new THREE.OctahedronGeometry(0.8, 0),
+      new THREE.MeshBasicMaterial({ color: 0x6ee7b7 })
+    );
+    lantern.position.set(0, 5.5, 15);
+    this.ghostShipGroup.add(lantern);
+
+    this.ghostShipLanternLight = new THREE.PointLight(0x10b981, 2.5, 25);
+    this.ghostShipLanternLight.position.set(0, 5.5, 15);
+    this.ghostShipGroup.add(this.ghostShipLanternLight);
+
+    // Undead Draugr Pirate Captain on helm deck
+    const captain = new THREE.Mesh(
+      new THREE.BoxGeometry(1.4, 2.6, 1.4),
+      new THREE.MeshStandardMaterial({ color: 0x065f46, emissive: 0x10b981, emissiveIntensity: 0.4 })
+    );
+    captain.position.set(0, 4.5, -9);
+    this.ghostShipGroup.add(captain);
+
+    this.scene.add(this.ghostShipGroup);
+
+    this.interactiveObjects.push({
+      id: 'ghost_ship_boss',
+      type: 'chest',
+      mesh: captain,
+      position: new THREE.Vector3(-55, 3.5, 151),
+      health: this.ghostShipHealth,
+      maxHealth: this.ghostShipMaxHealth,
+      name: 'Cursed Draugr Captain',
+      interactionPrompt: 'Board Ghost Drakkar & Plunder Draugr Haul (+600 Silver)',
+    });
+  }
+
+  /**
+   * Thor's Maelstrom Whirlpool Hazard
+   */
+  private buildThorMaelstrom() {
+    this.maelstromGroup = new THREE.Group();
+    this.maelstromGroup.position.set(-75, 0.25, 125);
+
+    const foamMat = new THREE.MeshBasicMaterial({
+      color: 0x67e8f9,
+      transparent: true,
+      opacity: 0.75,
+      side: THREE.DoubleSide,
+    });
+    const ring1 = new THREE.Mesh(new THREE.RingGeometry(8, 11, 28), foamMat);
+    ring1.rotation.x = -Math.PI / 2;
+    this.maelstromGroup.add(ring1);
+
+    const ring2 = new THREE.Mesh(
+      new THREE.RingGeometry(4, 7, 24),
+      new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.85, side: THREE.DoubleSide })
+    );
+    ring2.rotation.x = -Math.PI / 2;
+    ring2.position.y = -0.15;
+    this.maelstromGroup.add(ring2);
+
+    // Central vortex depression
+    const vortexCone = new THREE.Mesh(
+      new THREE.ConeGeometry(4, 5, 16, 1, true),
+      new THREE.MeshBasicMaterial({ color: 0x0369a1, transparent: true, opacity: 0.9, side: THREE.DoubleSide })
+    );
+    vortexCone.rotation.x = Math.PI;
+    vortexCone.position.y = -2.5;
+    this.maelstromGroup.add(vortexCone);
+
+    // Drifting Shipwreck Salvage Cargo Barrels & Sunken Strongboxes
+    const salvageMat = new THREE.MeshStandardMaterial({ color: 0xca8a04, roughness: 0.6, metalness: 0.4 });
+    const barrelMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.8 });
+
+    const salvagePoints = [
+      { id: 'maelstrom_salvage_1', name: 'Sunken Merchant Strongbox', pos: new THREE.Vector3(-83, 0.4, 118), isChest: true },
+      { id: 'maelstrom_salvage_2', name: 'Drifting Amber Cargo Barrel', pos: new THREE.Vector3(-66, 0.4, 132), isChest: false },
+      { id: 'maelstrom_salvage_3', name: 'Runic Shipwreck Haul', pos: new THREE.Vector3(-77, 0.4, 112), isChest: true },
+    ];
+
+    salvagePoints.forEach((s) => {
+      const mesh = s.isChest
+        ? new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.4, 1.4), salvageMat)
+        : new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 1.8, 10), barrelMat);
+      mesh.position.copy(s.pos);
+      mesh.castShadow = true;
+      this.scene.add(mesh);
+
+      this.interactiveObjects.push({
+        id: s.id,
+        type: 'chest',
+        mesh,
+        position: s.pos.clone(),
+        health: 100,
+        maxHealth: 100,
+        name: s.name,
+        interactionPrompt: `Press E to Salvage ${s.name} [+Silver & Amber]`,
+      });
+    });
+
+    this.scene.add(this.maelstromGroup);
+  }
+
+  public getMaelstromSuction(pos: THREE.Vector3): { inZone: boolean; pullX: number; pullZ: number; distance: number } {
+    const eyeX = -75;
+    const eyeZ = 125;
+    const dx = eyeX - pos.x;
+    const dz = eyeZ - pos.z;
+    const dist = Math.hypot(dx, dz);
+    if (dist < 42 && dist > 1.0) {
+      const strength = Math.min(16, (42 - dist) * 0.55);
+      const nx = dx / dist;
+      const nz = dz / dist;
+      // Perpendicular swirl component
+      const swirlX = -nz;
+      const swirlZ = nx;
+      return {
+        inZone: true,
+        pullX: (nx * 0.72 + swirlX * 0.68) * strength,
+        pullZ: (nz * 0.72 + swirlZ * 0.68) * strength,
+        distance: dist,
+      };
+    }
+    return { inZone: false, pullX: 0, pullZ: 0, distance: dist };
+  }
+
+  /**
+   * Holmgang Consecrated 1v1 Dueling Arena (Coastal Bluff)
+   */
+  private buildHolmgangArena() {
+    const arenaGroup = new THREE.Group();
+    arenaGroup.position.set(-36, 3.2, 48);
+
+    // Ritual Rune Stones encircling the sacred ring
+    const stoneMat = new THREE.MeshStandardMaterial({
+      color: 0x64748b,
+      roughness: 0.9,
+    });
+    const runeStoneMat = new THREE.MeshStandardMaterial({
+      color: 0x475569,
+      emissive: 0xd97706,
+      emissiveIntensity: 0.35,
+    });
+
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      const x = Math.cos(angle) * 7.5;
+      const z = Math.sin(angle) * 7.5;
+
+      const runePillar = new THREE.Mesh(
+        new THREE.BoxGeometry(0.9, 3.2, 0.6),
+        i % 2 === 0 ? runeStoneMat : stoneMat
+      );
+      runePillar.position.set(x, 1.6, z);
+      runePillar.rotation.y = -angle;
+      runePillar.castShadow = true;
+      arenaGroup.add(runePillar);
+    }
+
+    // Sacred hazel boundary rope ring on ground
+    const boundaryRing = new THREE.Mesh(
+      new THREE.RingGeometry(7.2, 7.6, 32),
+      new THREE.MeshBasicMaterial({ color: 0xf59e0b, side: THREE.DoubleSide })
+    );
+    boundaryRing.rotation.x = -Math.PI / 2;
+    boundaryRing.position.y = 0.08;
+    arenaGroup.add(boundaryRing);
+
+    // Consecration Center Rune Pad
+    this.holmgangRingMesh = new THREE.Mesh(
+      new THREE.CylinderGeometry(2.5, 2.7, 0.25, 16),
+      new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.8 })
+    );
+    this.holmgangRingMesh.position.set(0, 0.12, 0);
+    arenaGroup.add(this.holmgangRingMesh);
+
+    this.scene.add(arenaGroup);
+
+    this.interactiveObjects.push({
+      id: 'holmgang_arena',
+      type: 'chest',
+      mesh: this.holmgangRingMesh,
+      position: new THREE.Vector3(-36, 3.3, 48),
+      health: 100,
+      maxHealth: 100,
+      name: 'Holmgang Consecrated Ring',
+      interactionPrompt: 'Press E to Challenge 1v1 Holmgang Duel [Honor Laurel]',
+    });
+  }
+
+  /**
+   * Katfjord Longhouse Mead Hall Feast Table
+   */
+  private buildMeadHallFeastTable() {
+    const feastGroup = new THREE.Group();
+    feastGroup.position.set(0, 2.2, 0);
+
+    const woodMat = new THREE.MeshStandardMaterial({ color: 0x5c3317, roughness: 0.7 });
+    const tableTop = new THREE.Mesh(new THREE.BoxGeometry(7, 0.5, 16), woodMat);
+    tableTop.position.set(0, 1.8, 0);
+    tableTop.castShadow = true;
+    feastGroup.add(tableTop);
+
+    // Roasted Boar Platter with Apple
+    const platter = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.6, 1.8, 0.2, 12),
+      new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.85 })
+    );
+    platter.position.set(0, 2.15, -2);
+    feastGroup.add(platter);
+
+    const boarRoast = new THREE.Mesh(
+      new THREE.BoxGeometry(1.8, 0.9, 2.6),
+      new THREE.MeshStandardMaterial({ color: 0x7c2d12, roughness: 0.6 })
+    );
+    boarRoast.position.set(0, 2.65, -2);
+    boarRoast.castShadow = true;
+    feastGroup.add(boarRoast);
+
+    // Curved Mead Horns
+    [-1.8, 1.8].forEach((hx) => {
+      const horn = new THREE.Mesh(
+        new THREE.ConeGeometry(0.35, 1.4, 8),
+        new THREE.MeshStandardMaterial({ color: 0xfef08a, roughness: 0.3 })
+      );
+      horn.rotation.z = hx > 0 ? 0.4 : -0.4;
+      horn.position.set(hx, 2.6, 2);
+      feastGroup.add(horn);
+    });
+
+    this.feastTableMesh = tableTop;
+    this.scene.add(feastGroup);
+
+    this.interactiveObjects.push({
+      id: 'feast_table',
+      type: 'chest',
+      mesh: this.feastTableMesh,
+      position: new THREE.Vector3(0, 3.2, 0),
+      health: 100,
+      maxHealth: 100,
+      name: 'Skál Great Feast Table',
+      interactionPrompt: 'Press E to Feast & Drink Mead [Skál!]',
+    });
+  }
+
+  public damageSaxonGate(dmg: number): { breached: boolean; currentHp: number } {
+    if (this.saxonGateBreached) return { breached: true, currentHp: 0 };
+    this.saxonGateHealth = Math.max(0, this.saxonGateHealth - dmg);
+    if (this.saxonGateHealth <= 0) {
+      this.saxonGateBreached = true;
+      if (this.saxonGateMesh) {
+        this.saxonGateMesh.visible = false;
+      }
+      return { breached: true, currentHp: 0 };
+    }
+    return { breached: false, currentHp: this.saxonGateHealth };
+  }
+
+  public damageGhostShip(dmg: number): { sunk: boolean; currentHp: number } {
+    if (this.ghostShipSunk) return { sunk: true, currentHp: 0 };
+    this.ghostShipHealth = Math.max(0, this.ghostShipHealth - dmg);
+    if (this.ghostShipHealth <= 0) {
+      this.ghostShipSunk = true;
+      if (this.ghostShipGroup) {
+        this.ghostShipGroup.visible = false;
+      }
+      return { sunk: true, currentHp: 0 };
+    }
+    return { sunk: false, currentHp: this.ghostShipHealth };
   }
 
   public setTerritoryCaptured(captured: boolean) {
@@ -3022,6 +3444,28 @@ export class VikingWorld {
         if (line.position.z > 200) line.position.z -= 250;
         else if (line.position.z < -50) line.position.z += 250;
       });
+    }
+
+    // 6. THOR'S MAELSTROM WHIRLPOOL VORTEX ROTATION
+    if (this.maelstromGroup) {
+      this.maelstromGroup.children.forEach((child, idx) => {
+        if (idx === 0) child.rotation.z += 2.8 * delta;
+        else if (idx === 1) child.rotation.z -= 4.2 * delta;
+        else if (idx === 2) child.rotation.y += 3.5 * delta;
+      });
+    }
+
+    // 7. CURSED GHOST DRAKKAR ETHEREAL DRIFT & MIST PATROL
+    if (this.ghostShipGroup && !this.ghostShipSunk) {
+      this.ghostShipAngle += 0.22 * delta;
+      this.ghostShipGroup.position.x = -55 + Math.sin(this.ghostShipAngle * 0.75) * 14;
+      this.ghostShipGroup.position.z = 160 + Math.cos(this.ghostShipAngle * 0.75) * 16;
+      this.ghostShipGroup.rotation.y = this.ghostShipAngle * 0.75 + Math.PI / 2;
+      this.ghostShipGroup.rotation.z = Math.sin(elapsed * 2.2) * 0.08;
+      this.ghostShipGroup.position.y = -0.6 + Math.sin(elapsed * 1.8) * 0.45;
+      if (this.ghostShipLanternLight) {
+        this.ghostShipLanternLight.intensity = 2.4 + Math.sin(elapsed * 5.0) * 0.9;
+      }
     }
   }
 

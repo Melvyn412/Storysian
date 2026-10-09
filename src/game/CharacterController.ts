@@ -44,6 +44,18 @@ export class CharacterController {
   public petOrbitTime: number = 0;
   public activeTool: ToolType = 'axe';
 
+  // Berserker Fury State
+  public isBerserk: boolean = false;
+  public berserkAuraGroup: THREE.Group = new THREE.Group();
+
+  // Valkyrie Wings Gliding System
+  public isValkyrieGliding: boolean = false;
+  public valkyrieWingsGroup: THREE.Group = new THREE.Group();
+
+  // Drake Flying Mount
+  public mountWings: THREE.Group[] = [];
+  public isFlying: boolean = false;
+
   // Camera settings
   public cameraTarget: THREE.Vector3;
   public cameraDistance: number = 11;
@@ -101,6 +113,27 @@ export class CharacterController {
     );
     buckle.position.y = -1.0;
     this.torsoMesh.add(buckle);
+
+    // Valkyrie Golden Glider Wings
+    this.valkyrieWingsGroup = new THREE.Group();
+    const wingMat = new THREE.MeshStandardMaterial({
+      color: 0xfacc15,
+      emissive: 0xd97706,
+      emissiveIntensity: 0.55,
+      transparent: true,
+      opacity: 0.85,
+      roughness: 0.25,
+      side: THREE.DoubleSide,
+    });
+    [-1, 1].forEach((side) => {
+      const wing = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.2, 0.08), wingMat);
+      wing.position.set(side * 1.6, 0.2, -0.72);
+      wing.rotation.z = side * 0.35;
+      wing.rotation.y = side * 0.25;
+      this.valkyrieWingsGroup.add(wing);
+    });
+    this.valkyrieWingsGroup.visible = false;
+    this.torsoMesh.add(this.valkyrieWingsGroup);
 
     // 2. Head (Classic Roblox blocky head)
     const headGeo = new THREE.BoxGeometry(1.6, 1.6, 1.6);
@@ -242,6 +275,36 @@ export class CharacterController {
     this.mountGroup.position.set(0, 0, 0);
     this.group.add(this.mountGroup);
     this.rebuildMount(this.activeMountId);
+
+    // Berserker Fire Aura
+    this.berserkAuraGroup = new THREE.Group();
+    this.berserkAuraGroup.position.set(0, 1.8, 0);
+    this.berserkAuraGroup.visible = false;
+    const auraRingMat = new THREE.MeshBasicMaterial({
+      color: 0xef4444,
+      transparent: true,
+      opacity: 0.75,
+      side: THREE.DoubleSide,
+    });
+    const ring1 = new THREE.Mesh(new THREE.RingGeometry(1.8, 2.4, 16), auraRingMat);
+    ring1.rotation.x = Math.PI / 2;
+    this.berserkAuraGroup.add(ring1);
+    const ring2 = new THREE.Mesh(
+      new THREE.TorusGeometry(2.1, 0.12, 8, 24),
+      new THREE.MeshBasicMaterial({ color: 0xf59e0b })
+    );
+    ring2.rotation.x = Math.PI / 2;
+    this.berserkAuraGroup.add(ring2);
+    for (let i = 0; i < 6; i++) {
+      const ember = new THREE.Mesh(
+        new THREE.OctahedronGeometry(0.28, 0),
+        new THREE.MeshBasicMaterial({ color: 0xfacc15 })
+      );
+      const a = (i / 6) * Math.PI * 2;
+      ember.position.set(Math.cos(a) * 2.0, (i % 2 === 0 ? 0.8 : -0.4), Math.sin(a) * 2.0);
+      this.berserkAuraGroup.add(ember);
+    }
+    this.group.add(this.berserkAuraGroup);
 
     // 7. Young Viking Forager's Woven Basket (worn on back in Young Viking Meadow Realm)
     this.foragerBasketGroup = new THREE.Group();
@@ -1010,9 +1073,87 @@ export class CharacterController {
   public rebuildMount(mountId: MountId | null) {
     this.activeMountId = mountId;
     this.mountGroup.clear();
+    this.mountWings = [];
     if (!mountId) return;
 
-    const mountColors: Record<MountId, { fur: number; armor: number }> = {
+    if (mountId === 'mount_frost_drake') {
+      const drakeMat = new THREE.MeshStandardMaterial({
+        color: 0x0284c7,
+        roughness: 0.35,
+        metalness: 0.25,
+      });
+      const iceArmorMat = new THREE.MeshStandardMaterial({
+        color: 0x38bdf8,
+        emissive: 0x0284c7,
+        emissiveIntensity: 0.65,
+        metalness: 0.8,
+        roughness: 0.2,
+      });
+
+      // Drake torso
+      const mountBody = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.8, 4.8), drakeMat);
+      mountBody.position.set(0, 1.3, 0.2);
+      mountBody.castShadow = true;
+      this.mountGroup.add(mountBody);
+
+      // Saddle
+      const saddle = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.45, 2.0), iceArmorMat);
+      saddle.position.set(0, 2.2, 0);
+      this.mountGroup.add(saddle);
+
+      // Dragon neck & head
+      const neck = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.6, 2.2), drakeMat);
+      neck.position.set(0, 2.2, 2.4);
+      neck.rotation.x = -0.3;
+      this.mountGroup.add(neck);
+
+      const head = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.2, 2.2), drakeMat);
+      head.position.set(0, 2.8, 3.4);
+      this.mountGroup.add(head);
+
+      // Crystalline Ice Horns
+      [-0.55, 0.55].forEach((hx) => {
+        const horn = new THREE.Mesh(new THREE.ConeGeometry(0.25, 1.4, 4), iceArmorMat);
+        horn.position.set(hx, 3.6, 3.1);
+        horn.rotation.x = -0.4;
+        this.mountGroup.add(horn);
+      });
+
+      // Drake tail
+      const tail = new THREE.Mesh(new THREE.ConeGeometry(0.7, 3.4, 4), drakeMat);
+      tail.position.set(0, 1.3, -3.1);
+      tail.rotation.x = Math.PI / 2 + 0.15;
+      this.mountGroup.add(tail);
+
+      // Animated Wings (Left and Right)
+      [-1, 1].forEach((dir) => {
+        const wingPivot = new THREE.Group();
+        wingPivot.position.set(dir * 1.3, 2.1, 0.6);
+
+        const wingBone = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.2, 0.7), iceArmorMat);
+        wingBone.position.set(dir * 1.6, 0.2, 0);
+        wingPivot.add(wingBone);
+
+        const wingSail = new THREE.Mesh(
+          new THREE.BoxGeometry(3.0, 0.08, 2.4),
+          new THREE.MeshStandardMaterial({
+            color: 0x7dd3fc,
+            transparent: true,
+            opacity: 0.85,
+            emissive: 0x0284c7,
+            emissiveIntensity: 0.4,
+          })
+        );
+        wingSail.position.set(dir * 1.5, 0.1, -1.0);
+        wingPivot.add(wingSail);
+
+        this.mountGroup.add(wingPivot);
+        this.mountWings.push(wingPivot);
+      });
+      return;
+    }
+
+    const mountColors: Record<Exclude<MountId, 'mount_frost_drake'>, { fur: number; armor: number }> = {
       mount_war_bear: { fur: 0x78350f, armor: 0xf59e0b },
       mount_dire_wolf: { fur: 0x475569, armor: 0x38bdf8 },
       mount_sleipnir: { fur: 0x1e1b4b, armor: 0xfde047 },
@@ -1155,7 +1296,9 @@ export class CharacterController {
 
     // 1. Movement Calculation (with Mount & Gamepass Speed Multipliers)
     const mountBoost =
-      this.activeMountId === 'mount_sleipnir'
+      this.activeMountId === 'mount_frost_drake'
+        ? 2.3
+        : this.activeMountId === 'mount_sleipnir'
         ? 1.95
         : this.activeMountId === 'mount_dire_wolf'
         ? 1.7
@@ -1163,6 +1306,9 @@ export class CharacterController {
         ? 1.45
         : 1.0;
     let moveSpeed = (keys.sprint ? 14 : 8.5) * mountBoost * this.speedPassMultiplier;
+    if (this.isBerserk) {
+      moveSpeed *= 1.45;
+    }
     const moveDir = new THREE.Vector3();
 
     // Compute camera forward & right projected onto ground plane
@@ -1246,13 +1392,60 @@ export class CharacterController {
     // 2. Jumping, Gravity & Valhalla Sky Obby Platform Collision
     const prevY = this.position.y;
     const mountJumpBoost = this.activeMountId ? 1.25 : 1.0;
-    if (keys.jump && this.isGrounded) {
-      this.velocity.y = 9.8 * mountJumpBoost * this.jumpPassMultiplier;
-      this.isGrounded = false;
+
+    if (this.activeMountId === 'mount_frost_drake') {
+      if (keys.jump) {
+        this.velocity.y = Math.min(18, this.velocity.y + 36 * delta);
+        this.isGrounded = false;
+        this.isFlying = true;
+      } else if (this.position.y > 5.5) {
+        // Slow gentle glide descending slowly
+        this.velocity.y = Math.max(-5.0, this.velocity.y - 10 * delta);
+        this.isFlying = true;
+      } else {
+        this.velocity.y -= 22 * delta;
+        this.isFlying = false;
+      }
+      this.position.y += this.velocity.y * delta;
+    } else {
+      if (keys.jump && this.isGrounded) {
+        this.velocity.y = 9.8 * mountJumpBoost * this.jumpPassMultiplier;
+        this.isGrounded = false;
+        this.isValkyrieGliding = false;
+      } else if (keys.jump && !this.isGrounded && this.position.y > 5.0 && this.velocity.y < 0) {
+        // Valkyrie Golden Wings Glide
+        this.isValkyrieGliding = true;
+        this.velocity.y = Math.max(-3.4, this.velocity.y);
+      } else {
+        this.isValkyrieGliding = false;
+      }
+      this.velocity.y -= (this.isValkyrieGliding ? 4.5 : 24) * delta; // Reduced gravity during glide
+      this.position.y += this.velocity.y * delta;
+      this.isFlying = this.isValkyrieGliding;
+
+      if (this.valkyrieWingsGroup) {
+        this.valkyrieWingsGroup.visible = this.isValkyrieGliding;
+        if (this.isValkyrieGliding) {
+          this.valkyrieWingsGroup.rotation.z = Math.sin(this.walkTime * 0.4) * 0.15;
+        }
+      }
     }
 
-    this.velocity.y -= 24 * delta; // Gravity
-    this.position.y += this.velocity.y * delta;
+    // Flap wings on Frost Drake mount
+    if (this.mountWings && this.mountWings.length >= 2) {
+      const flapSpeed = this.isFlying ? 14 : isMoving ? 8 : 2.5;
+      const flapAngle = Math.sin(this.walkTime * 0.4 + (this.isFlying ? this.walkTime * 0.8 : 0)) * (this.isFlying ? 0.65 : 0.35);
+      this.mountWings[0].rotation.z = -flapAngle;
+      this.mountWings[1].rotation.z = flapAngle;
+    }
+
+    // Animate Berserker Fire Aura
+    if (this.berserkAuraGroup) {
+      this.berserkAuraGroup.visible = this.isBerserk;
+      if (this.isBerserk) {
+        this.berserkAuraGroup.rotation.y += delta * 6.5;
+      }
+    }
 
     // Ground check (Plateau height is y=3, ocean shore is y=1, plus floating Sky Obby platforms)
     const baseGround = (this.position.z > 50 && this.position.z < 185) ? 1.0 : 3.0;
@@ -1276,6 +1469,8 @@ export class CharacterController {
       this.position.y = groundLevel;
       this.velocity.y = 0;
       this.isGrounded = true;
+      this.isValkyrieGliding = false;
+      if (this.valkyrieWingsGroup) this.valkyrieWingsGroup.visible = false;
     }
 
     // 3. Classic Roblox Walking & Stride Animation
