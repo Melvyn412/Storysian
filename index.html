@@ -6,10 +6,24 @@
     <title>STORYSIAN VIKING WAR COUNCIL.AI.STUDIO</title>
     <meta name="description" content="STORYSIAN VIKING WAR COUNCIL.AI.STUDIO — A Roblox-inspired 3D blocky Norse multiplayer realm with Drakkar longship naval raids, Niflheim dungeons, and co-op world bosses." />
     <meta name="keywords" content="Storysian, Viking game, Norse multiplayer, 3D sandbox RPG, Drakkar longship, fjord fishing, Norse archery, fortress base building, Draugr crypt dungeon, Saxon siege battles, Katfjord" />
-    <meta name="robots" content="index, follow" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    <meta name="msnbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    <meta name="slurp" content="index, follow" />
     <meta name="author" content="Storysian" />
     <meta name="theme-color" content="#0a0a0a" />
-    <link rel="canonical" href="https://storysian.com/" />
+    <link rel="canonical" id="canonical-link" href="https://www.storysian.com/" />
+    <script>
+      (function() {
+        try {
+          var c = document.getElementById('canonical-link');
+          if (c && window.location.origin && window.location.origin.indexOf('localhost') === -1) {
+            c.href = window.location.origin + window.location.pathname;
+          }
+        } catch(e) {}
+      })();
+    </script>
 
     <!-- OpenGraph Social Metadata -->
     <meta property="og:type" content="website" />

@@ -13,8 +13,11 @@ import {
   Ship,
   Wind,
   Compass,
+  Shield,
+  Volume2,
 } from 'lucide-react';
 import { SeaSerpentState, WindSailingStats } from '../types';
+import { FleetFormationType } from '../game/VikingFleetManager';
 
 interface ShipControlHUDProps {
   speed: number;
@@ -28,6 +31,9 @@ interface ShipControlHUDProps {
   onRespawnSeaSerpent?: () => void;
   onOpenArmory?: () => void;
   windStats?: WindSailingStats | null;
+  fleetFormation?: FleetFormationType;
+  onChangeFormation?: (formation: FleetFormationType) => void;
+  onRallyFleet?: () => void;
 }
 
 export const ShipControlHUD: React.FC<ShipControlHUDProps> = ({
@@ -42,6 +48,9 @@ export const ShipControlHUD: React.FC<ShipControlHUDProps> = ({
   onRespawnSeaSerpent,
   onOpenArmory,
   windStats,
+  fleetFormation = 'wedge',
+  onChangeFormation,
+  onRallyFleet,
 }) => {
   const [crewRole, setCrewRole] = useState<'captain' | 'gunner'>('captain');
 
@@ -354,6 +363,80 @@ export const ShipControlHUD: React.FC<ShipControlHUDProps> = ({
           <Waves className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
         </div>
       )}
+
+      {/* Viking Invasion Fleet (6 Warships · 24 NPC Shield-Brothers) */}
+      <div className="mt-1.5 w-full px-3 py-1.5 bg-neutral-950/90 border border-amber-600/60 rounded-xl shadow-lg flex flex-wrap items-center justify-between gap-2 text-xs text-white backdrop-blur-md">
+        <div className="flex items-center gap-2">
+          <div className="p-1 bg-amber-500/20 text-amber-400 rounded">
+            <Shield className="w-3.5 h-3.5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="font-extrabold text-[11px] sm:text-xs text-amber-300 font-['Cinzel',serif]">
+                INVASION ARMADA
+              </span>
+              <span className="px-1.5 py-0.2 bg-amber-500/20 border border-amber-500/40 text-[9px] font-bold text-amber-300 rounded-full">
+                6 WARSHIPS · 24 NPCs
+              </span>
+            </div>
+            <p className="text-[10px] text-neutral-400 hidden sm:block">
+              Iron Raven · Sea Wolf · Thunder Wyrm · Blood Eagle · Valhalla Guard · Aegir's Wrath
+            </p>
+          </div>
+        </div>
+
+        {/* Formation Selector & Rally Horn Button */}
+        <div className="flex items-center gap-1.5">
+          {onChangeFormation && (
+            <div className="flex items-center bg-neutral-900 border border-neutral-700 rounded-lg p-0.5 text-[10px] font-bold">
+              <button
+                onClick={() => onChangeFormation('wedge')}
+                className={`px-2 py-0.5 rounded transition cursor-pointer ${
+                  fleetFormation === 'wedge'
+                    ? 'bg-amber-500 text-neutral-950'
+                    : 'text-neutral-400 hover:text-white'
+                }`}
+                title="Svinfylking (Boar's Snout) V-Wedge Assault Formation"
+              >
+                Wedge [V]
+              </button>
+              <button
+                onClick={() => onChangeFormation('line')}
+                className={`px-2 py-0.5 rounded transition cursor-pointer ${
+                  fleetFormation === 'line'
+                    ? 'bg-amber-500 text-neutral-950'
+                    : 'text-neutral-400 hover:text-white'
+                }`}
+                title="Parallel Battle Flank Formation"
+              >
+                Line
+              </button>
+              <button
+                onClick={() => onChangeFormation('convoy')}
+                className={`px-2 py-0.5 rounded transition cursor-pointer ${
+                  fleetFormation === 'convoy'
+                    ? 'bg-amber-500 text-neutral-950'
+                    : 'text-neutral-400 hover:text-white'
+                }`}
+                title="Column Convoy Formation"
+              >
+                Convoy
+              </button>
+            </div>
+          )}
+
+          {onRallyFleet && (
+            <button
+              onClick={onRallyFleet}
+              className="px-2.5 py-1 bg-amber-600 hover:bg-amber-500 active:scale-95 text-white font-extrabold text-[11px] rounded-lg shadow flex items-center gap-1 transition cursor-pointer"
+              title="Sound the Gjallarhorn to rally the 6 escort longships [H]"
+            >
+              <Volume2 className="w-3.5 h-3.5 text-amber-200" />
+              <span>Rally Horn [H]</span>
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* On-screen touch boat pedals (Row forward, Reverse, Port, Starboard, Ballista) */}
       <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 mt-2">

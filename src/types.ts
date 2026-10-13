@@ -1,4 +1,4 @@
-export type ToolType = 'axe' | 'shield' | 'horn' | 'mead' | 'torch' | 'hammer' | 'fishing_rod' | 'bow';
+export type ToolType = 'axe' | 'shield' | 'horn' | 'mead' | 'torch' | 'hammer' | 'fishing_rod' | 'bow' | 'runestone';
 
 export interface HotbarItem {
   id: string;

@@ -9,17 +9,18 @@ export const BATTLE_SCENARIOS: BattleScenario[] = [
     id: 'frostfang_siege',
     title: 'Siege of Frostfang Isle',
     subtitle: 'Naval Tempest Amphibious Invasion',
-    tagline: 'Steer the Drakkar through rough stormy seas and towering fjord waves to storm the island fortress!',
+    tagline: 'Lead the Drakkar flagship and an armada fleet of 6 warships through Thor\'s tempest to storm the citadel!',
     description:
-      'A ferocious Norse tempest has struck Katfjord. Chieftain Ulfric Frost-Bane has entrenched his warband in the jagged island citadel across treacherous waters. Board the dragon-headed warship at the docks, brave the surging storm swells and lightning-streaked gale, navigate the rough seas, smash their beachhead palisades, and plunder the sacred Golden Relic.',
+      'A ferocious Norse tempest has struck Katfjord. Chieftain Ulfric Frost-Bane has entrenched his warband in the jagged island citadel across treacherous waters. Assemble the Katfjord invasion armada, board your dragon-headed flagship at the docks, and lead your 6-ship fleet through surging storm swells and lightning-streaked gale. Brave the rough seas alongside 24 shield-brothers in the background, smash the beachhead palisades, and plunder the sacred Golden Relic.',
     location: 'Katfjord Docks ➔ Frostfang Island Citadel',
     difficulty: 'Epic Siege',
     image: siegeWarshipImg,
     rewardSilver: 500,
     rewardValor: 750,
     objectives: [
-      'Board the Drakkar Warship at the harbor docks',
-      'Conquer the rough stormy sea and navigate towering fjord waves',
+      'Board the Drakkar Flagship at the harbor docks',
+      'Lead the 6-ship invasion fleet through rough stormy seas and towering waves',
+      'Rally the fleet with the Gjallarhorn [H] as you approach the island',
       'Storm the island beachhead and smash 3 spiked barricades',
       'Slay Chieftain Ulfric Frost-Bane (World Boss)',
       'Plunder the Golden Relic chest (+500 Silver)',
@@ -27,8 +28,8 @@ export const BATTLE_SCENARIOS: BattleScenario[] = [
     spawnLocation: { x: 22, y: 4, z: 85 }, // Right at the ship helm ready to steer
     mountShipOnStart: true,
     bossName: 'Chieftain Ulfric Frost-Bane',
-    recommendedRole: 'Drakkar Helmsman & Vanguard',
-    badge: 'FLAGSHIP SIEGE',
+    recommendedRole: 'Fleet Admiral & Drakkar Vanguard',
+    badge: 'ARMADA SIEGE',
     weather: 'stormy',
   },
   {

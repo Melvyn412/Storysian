@@ -52,9 +52,28 @@ export class CharacterController {
   public isValkyrieGliding: boolean = false;
   public valkyrieWingsGroup: THREE.Group = new THREE.Group();
 
+  // Jump & Leap Mechanics (Thor's Leap, Sprint Vault & High Jump Prompt)
+  public hasDoubleJumped: boolean = false;
+  public jumpKeyPreviouslyPressed: boolean = false;
+  public jumpBoostPromptMultiplier: number = 1.0;
+
   // Drake Flying Mount
   public mountWings: THREE.Group[] = [];
   public isFlying: boolean = false;
+
+  // Roblox Ragdoll Break-Apart & Respawn Shield
+  public isRagdolling: boolean = false;
+  public ragdollTimer: number = 0;
+  private onRagdollComplete?: () => void;
+  public spawnShieldTimer: number = 0;
+  public spawnShieldMesh: THREE.Mesh;
+  private ragdollParts: {
+    mesh: THREE.Object3D;
+    initialPos: THREE.Vector3;
+    initialRot: THREE.Euler;
+    vel: THREE.Vector3;
+    rotVel: THREE.Vector3;
+  }[] = [];
 
   // Camera settings
   public cameraTarget: THREE.Vector3;
@@ -347,6 +366,23 @@ export class CharacterController {
 
     this.foragerBasketGroup.visible = false;
     this.torsoMesh.add(this.foragerBasketGroup);
+
+    // Translucent glowing Roblox Spawn Protection Shield Sphere
+    const shieldGeo = new THREE.SphereGeometry(3.6, 20, 20);
+    const shieldMat = new THREE.MeshStandardMaterial({
+      color: 0x38bdf8,
+      emissive: 0x0284c7,
+      emissiveIntensity: 0.85,
+      transparent: true,
+      opacity: 0.35,
+      roughness: 0.1,
+      metalness: 0.2,
+      side: THREE.DoubleSide,
+    });
+    this.spawnShieldMesh = new THREE.Mesh(shieldGeo, shieldMat);
+    this.spawnShieldMesh.position.y = 3.6;
+    this.spawnShieldMesh.visible = false;
+    this.group.add(this.spawnShieldMesh);
 
     scene.add(this.group);
   }
@@ -982,7 +1018,7 @@ export class CharacterController {
     this.shieldGroup.visible = tool === 'shield' || tool === 'axe';
     this.hornGroup.visible = tool === 'horn';
     this.meadGroup.visible = tool === 'mead';
-    this.torchGroup.visible = tool === 'torch';
+    this.torchGroup.visible = tool === 'torch' || tool === 'runestone';
     this.hammerGroup.visible = tool === 'hammer';
     this.fishingRodGroup.visible = tool === 'fishing_rod';
     this.bowGroup.visible = tool === 'bow';
@@ -1294,6 +1330,58 @@ export class CharacterController {
       this.manualLookTimer = Math.max(0, this.manualLookTimer - delta);
     }
 
+    // Spawn Protection Shield pulsating animation
+    if (this.spawnShieldTimer > 0) {
+      this.spawnShieldTimer = Math.max(0, this.spawnShieldTimer - delta);
+      this.spawnShieldMesh.visible = this.spawnShieldTimer > 0;
+      if (this.spawnShieldMesh.visible) {
+        this.spawnShieldMesh.rotation.y += delta * 1.5;
+        const pulse = 1.0 + Math.sin(performance.now() * 0.008) * 0.08;
+        this.spawnShieldMesh.scale.set(pulse, pulse, pulse);
+      }
+    } else if (this.spawnShieldMesh.visible) {
+      this.spawnShieldMesh.visible = false;
+    }
+
+    // Roblox Ragdoll Break-Apart Physics Loop
+    if (this.isRagdolling) {
+      this.ragdollTimer -= delta;
+
+      this.ragdollParts.forEach((part) => {
+        part.mesh.position.addScaledVector(part.vel, delta);
+        part.mesh.rotation.x += part.rotVel.x * delta;
+        part.mesh.rotation.y += part.rotVel.y * delta;
+        part.mesh.rotation.z += part.rotVel.z * delta;
+        part.vel.y -= 26 * delta; // Gravity
+
+        // Bounce on ground
+        if (part.mesh.position.y < 0.3) {
+          part.mesh.position.y = 0.3;
+          part.vel.y *= -0.35;
+          part.vel.x *= 0.8;
+          part.vel.z *= 0.8;
+        }
+      });
+
+      // Complete ragdoll reset
+      if (this.ragdollTimer <= 0) {
+        this.ragdollParts.forEach((part) => {
+          part.mesh.position.copy(part.initialPos);
+          part.mesh.rotation.copy(part.initialRot);
+        });
+        this.isRagdolling = false;
+        this.spawnShieldTimer = 3.0; // 3 seconds spawn protection
+        if (this.onRagdollComplete) {
+          this.onRagdollComplete();
+          this.onRagdollComplete = undefined;
+        }
+      }
+
+      // Camera still smoothly follows during ragdoll
+      camera.lookAt(this.position.x, this.position.y + 2, this.position.z);
+      return;
+    }
+
     // 1. Movement Calculation (with Mount & Gamepass Speed Multipliers)
     const mountBoost =
       this.activeMountId === 'mount_frost_drake'
@@ -1391,7 +1479,21 @@ export class CharacterController {
 
     // 2. Jumping, Gravity & Valhalla Sky Obby Platform Collision
     const prevY = this.position.y;
-    const mountJumpBoost = this.activeMountId ? 1.25 : 1.0;
+    
+    // Accurate mount jump multipliers matching config
+    let mountJumpBoost = 1.0;
+    if (this.activeMountId === 'mount_war_bear') mountJumpBoost = 1.15;
+    else if (this.activeMountId === 'mount_dire_wolf') mountJumpBoost = 1.30;
+    else if (this.activeMountId === 'mount_sleipnir') mountJumpBoost = 1.50;
+    else if (this.activeMountId) mountJumpBoost = 1.25;
+
+    // Running / Sprinting vault gives a +25% jump boost
+    const isSprintJumping = keys.sprint && isMoving;
+    const sprintJumpBoost = isSprintJumping ? 1.25 : 1.0;
+
+    // Base athletic jump velocity (elevated from 9.8 to 12.2 for higher, more heroic jumping)
+    const baseJumpVelocity = 12.2;
+    const isJustPressedJump = keys.jump && !this.jumpKeyPreviouslyPressed;
 
     if (this.activeMountId === 'mount_frost_drake') {
       if (keys.jump) {
@@ -1409,17 +1511,33 @@ export class CharacterController {
       this.position.y += this.velocity.y * delta;
     } else {
       if (keys.jump && this.isGrounded) {
-        this.velocity.y = 9.8 * mountJumpBoost * this.jumpPassMultiplier;
+        // Primary Ground Jump (prompted by Space / Jump button)
+        this.velocity.y = baseJumpVelocity * mountJumpBoost * sprintJumpBoost * this.jumpPassMultiplier * this.jumpBoostPromptMultiplier;
         this.isGrounded = false;
+        this.hasDoubleJumped = false;
         this.isValkyrieGliding = false;
-      } else if (keys.jump && !this.isGrounded && this.position.y > 5.0 && this.velocity.y < 0) {
+      } else if (isJustPressedJump && !this.isGrounded && !this.hasDoubleJumped && this.position.y > 1.8 && this.velocity.y < 6.0) {
+        // Thor's High Mid-Air Leap (Double Jump when prompted in air!)
+        this.velocity.y = 11.4 * mountJumpBoost * this.jumpPassMultiplier * this.jumpBoostPromptMultiplier;
+        this.hasDoubleJumped = true;
+        this.isValkyrieGliding = false;
+      } else if (keys.jump && !this.isGrounded && this.position.y > 4.5 && this.velocity.y < 0) {
         // Valkyrie Golden Wings Glide
         this.isValkyrieGliding = true;
         this.velocity.y = Math.max(-3.4, this.velocity.y);
       } else {
         this.isValkyrieGliding = false;
       }
-      this.velocity.y -= (this.isValkyrieGliding ? 4.5 : 24) * delta; // Reduced gravity during glide
+
+      // Variable jump height: Holding Jump provides sustained upward hangtime (gravity 17 vs 24)
+      let effectiveGravity = 24;
+      if (this.isValkyrieGliding) {
+        effectiveGravity = 4.5;
+      } else if (keys.jump && this.velocity.y > 0) {
+        effectiveGravity = 17.0; // Sustained jump apex when holding jump
+      }
+
+      this.velocity.y -= effectiveGravity * delta;
       this.position.y += this.velocity.y * delta;
       this.isFlying = this.isValkyrieGliding;
 
@@ -1469,6 +1587,7 @@ export class CharacterController {
       this.position.y = groundLevel;
       this.velocity.y = 0;
       this.isGrounded = true;
+      this.hasDoubleJumped = false;
       this.isValkyrieGliding = false;
       if (this.valkyrieWingsGroup) this.valkyrieWingsGroup.visible = false;
     }
@@ -1665,9 +1784,60 @@ export class CharacterController {
       camera.position.set(rawCamX, camY, rawCamZ);
       camera.lookAt(this.cameraTarget);
     }
+
+    // Record jump key state for mid-air Thor double jump detection
+    this.jumpKeyPreviouslyPressed = !!keys.jump;
   }
 
   public triggerCameraShake(intensity = 0.45) {
     this.cameraShake = Math.max(this.cameraShake, intensity);
+  }
+
+  public setJumpBoostPromptMultiplier(multiplier: number) {
+    this.jumpBoostPromptMultiplier = Math.max(0.5, Math.min(3.0, multiplier));
+  }
+
+  /**
+   * Classic Roblox Reset Character: "OOF!" + Limb Disconnection & Scatter
+   */
+  public triggerRagdollReset(onComplete: () => void) {
+    if (this.isRagdolling) return;
+    this.isRagdolling = true;
+    this.ragdollTimer = 1.35;
+    this.onRagdollComplete = onComplete;
+    sound.playOofSound();
+
+    // Reset mounts/gliders
+    this.isValkyrieGliding = false;
+    if (this.valkyrieWingsGroup) this.valkyrieWingsGroup.visible = false;
+    this.velocity.set(0, 0, 0);
+
+    const parts = [
+      { mesh: this.headMesh, vel: new THREE.Vector3((Math.random() - 0.5) * 8, 8, (Math.random() - 0.5) * 8) },
+      { mesh: this.torsoMesh, vel: new THREE.Vector3((Math.random() - 0.5) * 6, 6, (Math.random() - 0.5) * 6) },
+      { mesh: this.leftArm, vel: new THREE.Vector3(-7, 7, (Math.random() - 0.5) * 6) },
+      { mesh: this.rightArm, vel: new THREE.Vector3(7, 7, (Math.random() - 0.5) * 6) },
+      { mesh: this.leftLeg, vel: new THREE.Vector3(-4, 5, (Math.random() - 0.5) * 6) },
+      { mesh: this.rightLeg, vel: new THREE.Vector3(4, 5, (Math.random() - 0.5) * 6) },
+    ];
+
+    this.ragdollParts = parts.map((p) => ({
+      mesh: p.mesh,
+      initialPos: p.mesh.position.clone(),
+      initialRot: p.mesh.rotation.clone(),
+      vel: p.vel,
+      rotVel: new THREE.Vector3(
+        (Math.random() - 0.5) * 12,
+        (Math.random() - 0.5) * 12,
+        (Math.random() - 0.5) * 12
+      ),
+    }));
+  }
+
+  public triggerBerserkMode(duration = 6.0) {
+    this.isBerserk = true;
+    setTimeout(() => {
+      this.isBerserk = false;
+    }, duration * 1000);
   }
 }

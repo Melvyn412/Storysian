@@ -763,6 +763,102 @@ class SoundEngine {
     this.playVictoryTriumph();
     this.playFanfare();
   }
+
+  /**
+   * Iconic Classic Roblox "OOF!" Sound
+   */
+  public playOofSound() {
+    if (this.isMuted) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    const filter = this.ctx.createBiquadFilter();
+
+    osc.type = 'sawtooth';
+    // Pitch envelope: starts ~380Hz, quickly drops to ~130Hz
+    osc.frequency.setValueAtTime(380, t);
+    osc.frequency.exponentialRampToValueAtTime(140, t + 0.22);
+
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(450, t);
+    filter.frequency.exponentialRampToValueAtTime(280, t + 0.22);
+    filter.Q.value = 2.2;
+
+    gain.gain.setValueAtTime(0.55, t);
+    gain.gain.linearRampToValueAtTime(0.65, t + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.005, t + 0.24);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(t);
+    osc.stop(t + 0.26);
+  }
+
+  /**
+   * Iconic Roblox Checkpoint Chime (Two-tone ascending bright sparkle)
+   */
+  public playCheckpointChime() {
+    if (this.isMuted) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    // Bell 1: 880 Hz
+    const osc1 = this.ctx.createOscillator();
+    const gain1 = this.ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(880, t);
+    gain1.gain.setValueAtTime(0.35, t);
+    gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+    osc1.connect(gain1);
+    gain1.connect(this.ctx.destination);
+    osc1.start(t);
+    osc1.stop(t + 0.6);
+
+    // Bell 2: 1320 Hz (staggered slightly)
+    const osc2 = this.ctx.createOscillator();
+    const gain2 = this.ctx.createGain();
+    osc2.type = 'triangle';
+    osc2.frequency.setValueAtTime(1320, t + 0.1);
+    gain2.gain.setValueAtTime(0.0, t);
+    gain2.gain.setValueAtTime(0.4, t + 0.1);
+    gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.7);
+    osc2.connect(gain2);
+    gain2.connect(this.ctx.destination);
+    osc2.start(t + 0.1);
+    osc2.stop(t + 0.75);
+  }
+
+  /**
+   * Tycoon Coin / Silver Collect Chime
+   */
+  public playCoinCollect() {
+    if (this.isMuted) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(987.77, t); // B5
+    osc.frequency.exponentialRampToValueAtTime(1318.51, t + 0.12); // E6
+
+    gain.gain.setValueAtTime(0.3, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(t);
+    osc.stop(t + 0.38);
+  }
 }
 
 export const sound = new SoundEngine();

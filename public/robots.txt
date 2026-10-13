@@ -1,6 +1,31 @@
-# Robots.txt for storysian.com
+# Robots.txt for storysian.com and www.storysian.com
 User-agent: *
 Allow: /
 
+# Microsoft Bing & MSN Search Crawlers
+User-agent: Bingbot
+Allow: /
+
+User-agent: msnbot
+Allow: /
+
+User-agent: BingPreview
+Allow: /
+
+# Google Search Crawlers
+User-agent: Googlebot
+Allow: /
+
+User-agent: Googlebot-Image
+Allow: /
+
+# Yahoo / Slurp / DuckDuckGo
+User-agent: Slurp
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
 # Sitemaps
+Sitemap: https://www.storysian.com/sitemap.xml
 Sitemap: https://storysian.com/sitemap.xml

@@ -84,6 +84,7 @@ import {
   DEFAULT_UNLOCKED_NAVAL_ITEMS,
   getNavalItemById,
 } from './game/navalArmoryConfig';
+import { FleetFormationType } from './game/VikingFleetManager';
 import {
   GBP_CURRENCY_PACKS,
   INITIAL_GAMEPASSES,
@@ -137,6 +138,13 @@ import { GhostShipHUD } from './components/GhostShipHUD';
 import { MaelstromSalvageHUD } from './components/MaelstromSalvageHUD';
 import { HolmgangDuelModal } from './components/HolmgangDuelModal';
 import { MeadHallFeastModal } from './components/MeadHallFeastModal';
+import { RobloxEscMenu } from './components/RobloxEscMenu';
+import { RobloxOverheadDisplay, OverheadBubble, FloatingDamageNumber } from './components/RobloxOverheadDisplay';
+import { RobloxBackpackModal } from './components/RobloxBackpackModal';
+import { RobloxShiftLockReticle } from './components/RobloxShiftLockReticle';
+import { RobloxPerfStats } from './components/RobloxPerfStats';
+import { CheckpointManager } from './game/CheckpointManager';
+import { TycoonConveyorSim } from './game/TycoonConveyorSim';
 
 const INITIAL_SKINS: AvatarSkin[] = [
   {
@@ -269,6 +277,15 @@ const INITIAL_HOTBAR: HotbarItem[] = [
     iconName: 'bow',
     description: 'Aim and shoot Bodkin, Flame, and Frost arrows [O]',
     cooldown: 0.6,
+  },
+  {
+    id: 'tool_runestone',
+    name: 'Odin Rune Gem',
+    slot: 9,
+    type: 'runestone',
+    iconName: 'gem',
+    description: 'Ancient runic focus channeling Odin lightning & speed [9]',
+    cooldown: 1.5,
   },
 ];
 
@@ -438,7 +455,34 @@ export default function App() {
   const [windStats, setWindStats] = useState<WindSailingStats | null>(null);
   const [showDrakkarOnboarding, setShowDrakkarOnboarding] = useState(false);
   const drakkarCustomizationRef = useRef<DrakkarCustomization>(DEFAULT_DRAKKAR_CUSTOMIZATION);
-  drakkarCustomizationRef.current = drakkarCustomization;
+  const [fleetFormation, setFleetFormation] = useState<FleetFormationType>('wedge');
+
+  // Rally 6-Ship Viking Invasion Armada with War Horn
+  const handleRallyFleet = useCallback(() => {
+    if (worldRef.current?.fleetManager) {
+      worldRef.current.fleetManager.rallyFleetHorn();
+      addFloatingNumberRef.current('🎺 FLEET RALLIED: 24 Shield-Brothers Roar for Katfjord!', '#f59e0b', true);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `fleet_horn_${Date.now()}`,
+          sender: 'Invasion Fleet',
+          text: '🎺 Skalds sound the Gjallarhorn across the waters! 6 escort war drakkars roar in defiance of Thor\'s tempest!',
+          isSystem: true,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+    }
+  }, []);
+
+  const handleChangeFormation = useCallback((formation: FleetFormationType) => {
+    setFleetFormation(formation);
+    if (worldRef.current?.fleetManager) {
+      worldRef.current.fleetManager.setFormation(formation);
+      const name = formation === 'wedge' ? 'Svinfylking V-Wedge' : formation === 'line' ? 'Battle Line' : 'Escort Convoy';
+      addFloatingNumberRef.current(`⚓ Armada Formation: ${name}!`, '#38bdf8', true);
+    }
+  }, []);
 
   const [showArcheryHUD, setShowArcheryHUD] = useState(false);
   const [selectedArrow, setSelectedArrow] = useState<ArrowType>('bodkin');
@@ -593,6 +637,20 @@ export default function App() {
   const [badges, setBadges] = useState<AchievementBadge[]>(INITIAL_BADGES);
 
   const [isShiftLocked, setIsShiftLocked] = useState(false);
+  // Roblox 8 Features State
+  const [showEscMenu, setShowEscMenu] = useState(false);
+  const [showBackpack, setShowBackpack] = useState(false);
+  const [showPerfStats, setShowPerfStats] = useState(false);
+  const [mouseSensitivity, setMouseSensitivity] = useState(1.0);
+  const mouseSensitivityRef = useRef(1.0);
+  mouseSensitivityRef.current = mouseSensitivity;
+  const [activeBubbles, setActiveBubbles] = useState<OverheadBubble[]>([]);
+  const [overheadFloatingTexts, setOverheadFloatingTexts] = useState<FloatingDamageNumber[]>([]);
+  const [currentCheckpointName, setCurrentCheckpointName] = useState('Katfjord Pier Spawn Pad');
+
+  const checkpointMgrRef = useRef<CheckpointManager | null>(null);
+  const tycoonConveyorRef = useRef<TycoonConveyorSim | null>(null);
+  const [audioVolume, setAudioVolume] = useState(0.8);
   const [skillCooldowns, setSkillCooldowns] = useState<
     Record<'whirlwind' | 'thunder_leap' | 'frost_nova', number>
   >({
@@ -664,6 +722,18 @@ export default function App() {
         createdAt: Date.now(),
       };
       setFloatingNumbers((prev) => [...prev.slice(-14), newNum]);
+      setOverheadFloatingTexts((prev) => [
+        ...prev.slice(-6),
+        {
+          id: `ov_${Date.now()}_${Math.random()}`,
+          text,
+          color,
+          worldPos: playerRef.current
+            ? { x: playerRef.current.position.x, y: playerRef.current.position.y, z: playerRef.current.position.z }
+            : { x: 0, y: 3, z: 20 },
+          createdAt: Date.now(),
+        },
+      ]);
     },
     []
   );
@@ -2399,6 +2469,30 @@ export default function App() {
     const clanConquestMgr = new ClanConquestManager(world.scene);
     clanConquestMgrRef.current = clanConquestMgr;
 
+    // 6. Roblox Checkpoint Manager & Hologram Spawn System
+    const checkpointMgr = new CheckpointManager(world.scene, (name) => {
+      setCurrentCheckpointName(name);
+      addFloatingNumberRef.current(`⭐ CHECKPOINT REACHED: ${name}`, '#10b981', true);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `cp_${Date.now()}`,
+          sender: 'SYSTEM',
+          clan: 'Katfjord',
+          text: `⭐ Spawn Checkpoint reached: ${name}`,
+          isSystem: true,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+    });
+    checkpointMgrRef.current = checkpointMgr;
+
+    // 7. Roblox Katfjord Tycoon Conveyor Dropper & Auto-Collector Furnace
+    const tycoonConveyor = new TycoonConveyorSim(world.scene, () => {
+      world.spawnCombatSparks(new THREE.Vector3(16, 4.4, 10.2), 'sparks');
+    });
+    tycoonConveyorRef.current = tycoonConveyor;
+
     // Window and container resize with ResizeObserver
     const handleResize = () => {
       if (!containerRef.current || !worldRef.current) return;
@@ -2460,8 +2554,16 @@ export default function App() {
         setCameraMode(nextMode);
       }
 
-      // Hotbar keys 1-8
-      if (['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8'].includes(code)) {
+      // Classic Roblox Esc Menu & Backpack keys
+      if (code === 'Escape') {
+        setShowEscMenu((prev) => !prev);
+      }
+      if (code === 'Backquote') {
+        setShowBackpack((prev) => !prev);
+      }
+
+      // Hotbar keys 1-9
+      if (['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9'].includes(code)) {
         const slot = parseInt(code.replace('Digit', ''), 10);
         setActiveSlot(slot);
         const item = INITIAL_HOTBAR.find((i) => i.slot === slot);
@@ -2547,6 +2649,11 @@ export default function App() {
           );
           addFloatingNumberRef.current('❄️⚓ FROST-BALLISTA BROADSIDE -95!', '#38bdf8', true);
         }
+      }
+
+      // Rally 6-Ship Viking Invasion Armada Fleet Horn Key [H]
+      if (code === 'KeyH') {
+        handleRallyFleet();
       }
 
       // Drakkar Longship Onboarding Showcase & Pier Tour Key [N]
@@ -2646,17 +2753,18 @@ export default function App() {
     };
 
     const handleMouseMove = (e: MouseEvent) => {
-      // Drag camera with left-click, right-click, or middle-click to look up, down, and around
-      if (isMouseDownRef.current || isLeftMouseDownRef.current) {
-        const dx = e.clientX - mousePrevRef.current.x;
-        const dy = e.clientY - mousePrevRef.current.y;
+      // Drag camera with left/right click OR continuously rotate camera and player when Shift Lock is ON
+      if (isMouseDownRef.current || isLeftMouseDownRef.current || player.isShiftLocked) {
+        const dx = e.movementX !== undefined && Math.abs(e.movementX) < 120 ? e.movementX : e.clientX - mousePrevRef.current.x;
+        const dy = e.movementY !== undefined && Math.abs(e.movementY) < 120 ? e.movementY : e.clientY - mousePrevRef.current.y;
         mousePrevRef.current = { x: e.clientX, y: e.clientY };
 
         if (isLeftMouseDownRef.current) {
           leftMouseDragDistRef.current += Math.hypot(dx, dy);
         }
 
-        player.applyLookDelta(dx * 0.0065, -dy * 0.0065);
+        const sens = mouseSensitivityRef.current;
+        player.applyLookDelta(dx * 0.006 * sens, -dy * 0.006 * sens);
       }
     };
 
@@ -2795,6 +2903,21 @@ export default function App() {
 
       // Update player character physics, Sky Obby platform landing, and camera
       player.update(delta, keysRef.current, world.camera, world.obbyPlatforms);
+
+      // Update Roblox Checkpoint Manager & Hologram Spawn System
+      checkpointMgrRef.current?.update(delta, player.position);
+
+      // Update Roblox Tycoon Conveyor Dropper & Auto-Collector Furnace
+      tycoonConveyorRef.current?.update(delta);
+
+      // Auto-collect on Katfjord Tycoon Pad (within 3.2m of x: 16, z: 16)
+      if (Math.hypot(player.position.x - 16, player.position.z - 16) < 3.2) {
+        const collected = tycoonConveyorRef.current?.collectPool() || 0;
+        if (collected > 0) {
+          setStats((st) => ({ ...st, silver: st.silver + collected }));
+          addFloatingNumberRef.current(`💰 +${collected} Silver (Tycoon Collector)`, '#facc15');
+        }
+      }
 
       // Update Remote Multiplayer Avatars, Shared Co-Op World Boss & Meteor Drops
       remoteMgr.update(delta, time);
@@ -3272,6 +3395,17 @@ export default function App() {
 
   // Chat message send (Broadcasts live to all players in the WebSocket realm)
   const handleSendMessage = (text: string) => {
+    // Add overhead speech bubble for local player
+    setActiveBubbles((prev) => [
+      ...prev.slice(-3),
+      {
+        id: `bubble_${Date.now()}`,
+        sender: stats.name,
+        text,
+        createdAt: Date.now(),
+      },
+    ]);
+
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(
         JSON.stringify({
@@ -3291,6 +3425,46 @@ export default function App() {
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
     setMessages((prev) => [...prev, newMsg]);
+  };
+
+  // Roblox Chat Slash Commands (/e dance, /e wave, /re, /help, etc.)
+  const handleSlashCommand = (cmd: string, raw: string) => {
+    if (cmd.startsWith('/e dance')) {
+      playerRef.current?.triggerSkillAnimation('whirlwind');
+      sound.playFanfare();
+      handleSendMessage('*dances triumphantly*');
+    } else if (cmd.startsWith('/e wave')) {
+      playerRef.current?.playEmote('wave');
+      handleSendMessage('*waves to the clan*');
+    } else if (cmd.startsWith('/e cheer')) {
+      playerRef.current?.playEmote('skol');
+      sound.playWarHorn();
+      handleSendMessage('*raises horn: Skol! To Valhalla!*');
+    } else if (cmd.startsWith('/e roar')) {
+      playerRef.current?.triggerBerserkMode();
+      sound.playBerserkerRoar();
+      handleSendMessage('*BERSERKER BATTLE ROAR!*');
+    } else if (cmd.startsWith('/e point')) {
+      handleSendMessage('*points weapon forward*');
+    } else if (cmd === '/re' || cmd === '/reset') {
+      playerRef.current?.triggerRagdollReset(handleRespawn);
+    } else if (cmd === '/clear') {
+      setMessages([]);
+    } else if (cmd === '/help') {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `help_${Date.now()}`,
+          sender: 'SYSTEM',
+          clan: 'Roblox',
+          text: 'Roblox Commands: /e dance, /e wave, /e cheer, /e roar, /e point, /re (reset character), /clear',
+          isSystem: true,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+    } else {
+      handleSendMessage(raw);
+    }
   };
 
   // Emote trigger
@@ -3403,18 +3577,21 @@ export default function App() {
     handleDeployBattle(frostfangSiege);
   }, [handleDeployBattle]);
 
-  // Respawn at Great Longhouse
+  // Respawn at Active Checkpoint Pad (Katfjord Pier or Obby Stage)
   const handleRespawn = () => {
     if (!playerRef.current || !worldRef.current) return;
     worldRef.current.isShipMounted = false;
-    playerRef.current.position.set(0, 3, 20);
+    const spawnPos = checkpointMgrRef.current?.getActivePosition() || new THREE.Vector3(0, 3.24, 20);
+    playerRef.current.position.copy(spawnPos);
     playerRef.current.velocity.set(0, 0, 0);
+    playerRef.current.spawnShieldTimer = 3.0; // 3 seconds spawn protection
     setStats((prev) => ({
       ...prev,
       health: prev.maxHealth,
       stamina: prev.maxStamina,
       isSailing: false,
     }));
+    addFloatingNumberRef.current('🛡️ RESPAWNED (Spawn Protected)', '#38bdf8', true);
   };
 
   return (
@@ -3493,6 +3670,8 @@ export default function App() {
             addFloatingNumber('💀 Teleported to Ancient Draugr Crypt!', '#10b981', true);
           }
         }}
+        onOpenEscMenu={() => setShowEscMenu(true)}
+        onToggleBackpack={() => setShowBackpack((prev) => !prev)}
       />
 
       {/* Young Viking Meadow Sanctuary Floating HUD Bar (Active when inside Meadow Realm or Auto-Wandering) */}
@@ -3602,15 +3781,99 @@ export default function App() {
         activeBuffs={activeFeastBuffs}
       />
 
-      {/* Roblox Hotbar (Slots 1-6) */}
+      {/* Roblox Hotbar (Slots 1-9 & Backpack drawer toggle) */}
       <RobloxHotbar
         items={INITIAL_HOTBAR}
         activeSlot={activeSlot}
         onSelectSlot={handleSelectSlot}
+        onToggleBackpack={() => setShowBackpack((prev) => !prev)}
       />
 
-      {/* Roblox Chat Box */}
-      <RobloxChat messages={messages} onSendMessage={handleSendMessage} />
+      {/* Roblox Chat Box with Slash Commands & Autocomplete */}
+      <RobloxChat
+        messages={messages}
+        onSendMessage={handleSendMessage}
+        onSlashCommand={handleSlashCommand}
+      />
+
+      {/* Roblox Esc Menu & Reset Character (Oof!) Modal */}
+      <RobloxEscMenu
+        isOpen={showEscMenu}
+        onClose={() => setShowEscMenu(false)}
+        onResetCharacter={() => {
+          setShowEscMenu(false);
+          playerRef.current?.triggerRagdollReset(handleRespawn);
+        }}
+        onLeaveGame={() => {
+          setShowEscMenu(false);
+          setShowLandingPage(true);
+        }}
+        isShiftLocked={isShiftLocked}
+        onToggleShiftLock={() => {
+          const next = !isShiftLocked;
+          setIsShiftLocked(next);
+          if (playerRef.current) {
+            playerRef.current.isShiftLocked = next;
+          }
+        }}
+        isMuted={isMuted}
+        onToggleMute={() => {
+          const muted = sound.toggleMute();
+          setIsMuted(muted);
+        }}
+        volume={audioVolume}
+        onChangeVolume={(val) => {
+          setAudioVolume(val);
+          if (val === 0 && !isMuted) {
+            setIsMuted(true);
+            sound.setMuted(true);
+          } else if (val > 0 && isMuted) {
+            setIsMuted(false);
+            sound.setMuted(false);
+          }
+        }}
+        mouseSensitivity={mouseSensitivity}
+        onChangeSensitivity={setMouseSensitivity}
+        showPerfStats={showPerfStats}
+        onTogglePerfStats={() => setShowPerfStats((p) => !p)}
+        currentCheckpointName={currentCheckpointName}
+      />
+
+      {/* Roblox Overhead Billboard NameTags, Health Bars & Floating Cartoon Speech Bubbles */}
+      <RobloxOverheadDisplay
+        camera={worldRef.current?.camera || null}
+        playerPos={
+          playerRef.current
+            ? { x: playerRef.current.position.x, y: playerRef.current.position.y, z: playerRef.current.position.z }
+            : { x: radarState.playerX, y: 3.24, z: radarState.playerZ }
+        }
+        playerName={stats.name || 'Viking'}
+        playerRank={stats.clan || 'Katfjord'}
+        playerLevel={stats.level}
+        health={stats.health}
+        maxHealth={stats.maxHealth}
+        hasSpawnShield={!!playerRef.current && playerRef.current.spawnShieldTimer > 0}
+        activeBubbles={activeBubbles}
+        floatingTexts={overheadFloatingTexts}
+      />
+
+      {/* Roblox Backpack Inventory Drawer Modal (Slots 1-9) */}
+      <RobloxBackpackModal
+        isOpen={showBackpack}
+        onClose={() => setShowBackpack(false)}
+        items={INITIAL_HOTBAR}
+        activeSlot={activeSlot}
+        onSelectSlot={(slot) => {
+          handleSelectSlot(slot);
+          setShowBackpack(false);
+        }}
+      />
+
+      {/* Roblox Shift Lock Center Screen Aiming Reticle */}
+      <RobloxShiftLockReticle isShiftLocked={isShiftLocked} />
+
+      {/* Roblox Performance Stats HUD (FPS, Ping, Memory) */}
+      <RobloxPerfStats isVisible={showPerfStats} />
 
       {/* Roblox Leaderboard Modal */}
       <RobloxLeaderboard
@@ -3691,6 +3954,9 @@ export default function App() {
             if (worldRef.current) worldRef.current.shipRotation += amt;
           }}
           onOpenArmory={() => setShowArmory(true)}
+          fleetFormation={fleetFormation}
+          onChangeFormation={handleChangeFormation}
+          onRallyFleet={handleRallyFleet}
         />
       )}
 

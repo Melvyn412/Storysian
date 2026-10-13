@@ -3,6 +3,7 @@ import { BattleId, TycoonBuilding, DrakkarCustomization, WindSailingStats } from
 import { sound } from '../audio/soundEngine';
 import { INITIAL_TYCOON_BUILDINGS } from './robloxFeaturesConfig';
 import { getNavalItemById, DEFAULT_DRAKKAR_CUSTOMIZATION } from './navalArmoryConfig';
+import { VikingFleetManager, FleetFormationType } from './VikingFleetManager';
 
 export type WeatherCondition = 'sunny' | 'foggy' | 'snowy' | 'stormy';
 
@@ -107,6 +108,9 @@ export class VikingWorld {
   public isShipMounted: boolean = false;
   public shipSpeed: number = 0;
   public shipRotation: number = 0;
+
+  // 6. Viking Armada Fleet (Thor's Tempest Escort Fleet with 24 NPC Shield-Brothers)
+  public fleetManager: VikingFleetManager;
 
   // Realistic Campaign Battlefield Fortifications & Visual FX
   public campaignBarricades: DestructibleBarricade[] = [];
@@ -239,6 +243,13 @@ export class VikingWorld {
     this.buildMistParticles();
     this.buildRainParticles();
     this.buildSeaSprayParticles();
+
+    // Initialize 6-Ship Viking Invasion Armada with 24 NPC Shield-Brothers
+    this.fleetManager = new VikingFleetManager(
+      this.scene,
+      (x, z, t) => this.getWaterHeight(x, z, t),
+      (pos, intensity) => this.spawnSeaSpray(pos, intensity)
+    );
   }
 
   private setupLighting() {
@@ -3467,6 +3478,19 @@ export class VikingWorld {
         this.ghostShipLanternLight.intensity = 2.4 + Math.sin(elapsed * 5.0) * 0.9;
       }
     }
+
+    // 8. VIKING INVASION FLEET (6 Escort Warships & 24 NPC Shield-Brothers in Thor's Tempest)
+    if (this.fleetManager && this.shipGroup) {
+      this.fleetManager.update(
+        delta,
+        elapsed,
+        this.shipGroup.position,
+        this.shipRotation,
+        this.shipSpeed,
+        this.isShipMounted,
+        this.weather
+      );
+    }
   }
 
   public resize(width: number, height: number) {
@@ -3516,6 +3540,7 @@ export class VikingWorld {
     if (this.waterGeo) {
       this.waterGeo.dispose();
     }
+    this.fleetManager?.dispose();
     this.renderer.dispose();
   }
 }

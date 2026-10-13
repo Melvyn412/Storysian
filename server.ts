@@ -254,14 +254,30 @@ async function startServer() {
   const app = express();
   app.use(express.json());
 
-  // Allow storysian.com and custom domain forwarding / iframe masking
+  // Allow storysian.com and custom domain forwarding / iframe masking & search engine indexing
   app.use((_req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     res.setHeader('Content-Security-Policy', 'frame-ancestors *');
+    res.setHeader('X-Robots-Tag', 'all, index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1');
     res.removeHeader('X-Frame-Options');
     next();
+  });
+
+  // Explicit search engine crawler endpoints for Bing & Google
+  app.get('/robots.txt', (_req, res) => {
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('X-Robots-Tag', 'all, index, follow');
+    const robotsPath = path.resolve(__dirname, 'public', 'robots.txt');
+    res.sendFile(robotsPath);
+  });
+
+  app.get('/sitemap.xml', (_req, res) => {
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.setHeader('X-Robots-Tag', 'all, index, follow');
+    const sitemapPath = path.resolve(__dirname, 'public', 'sitemap.xml');
+    res.sendFile(sitemapPath);
   });
 
   // 1. Public PayPal & GBP Treasury Configuration Endpoint (Never exposes PAYPAL_CLIENT_SECRET)

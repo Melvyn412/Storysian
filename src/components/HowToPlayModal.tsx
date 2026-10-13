@@ -60,8 +60,8 @@ const MOVEMENT_SHORTCUTS: ShortcutItem[] = [
   },
   {
     keys: ['SPACE'],
-    action: 'Jump / Vault',
-    description: 'Jump over obstacles, climb Valhalla Sky Obby platforms, or leap in combat.',
+    action: 'High Jump / Thor Leap',
+    description: 'Hold Space to leap higher! Tap mid-air for Thor’s Double Leap, or Sprint+Jump to vault high obstacles.',
   },
   {
     keys: ['SHIFT'],
@@ -129,6 +129,12 @@ const COMBAT_SHORTCUTS: ShortcutItem[] = [
     action: 'Fire Drakkar Frost-Ballista',
     description: 'Launch a 3D runic harpoon broadside at Jörmungandr the Fjord Sea Serpent (-95 HP).',
     quickActionId: 'drakkar',
+  },
+  {
+    keys: ['H'],
+    action: 'Rally Invasion Armada Fleet',
+    description:
+      'Sound the Gjallarhorn across Thor\'s Tempest to rally the 6 escort warships and 24 NPC shield-brothers in battle formation!',
   },
 ];
 

@@ -85,6 +85,8 @@ interface RobloxTopBarProps {
   onEnterCrypt?: () => void;
   showDrakkarTour?: boolean;
   onToggleDrakkarTour?: () => void;
+  onOpenEscMenu?: () => void;
+  onToggleBackpack?: () => void;
 }
 
 export const RobloxTopBar: React.FC<RobloxTopBarProps> = ({
@@ -136,6 +138,8 @@ export const RobloxTopBar: React.FC<RobloxTopBarProps> = ({
   onEnterCrypt,
   showDrakkarTour,
   onToggleDrakkarTour,
+  onOpenEscMenu,
+  onToggleBackpack,
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -155,8 +159,12 @@ export const RobloxTopBar: React.FC<RobloxTopBarProps> = ({
       <header className="absolute top-0 left-0 right-0 z-40 flex items-center justify-between px-2.5 sm:px-3 py-1.5 sm:py-2 bg-neutral-900/90 backdrop-blur-md border-b border-neutral-700/60 select-none text-white text-xs sm:text-sm font-sans shadow-lg gap-2">
         {/* Left: Roblox Logo & Game Title */}
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 min-w-0">
-          {/* Classic Roblox Slanted Square Icon */}
-          <div className="w-6 h-6 sm:w-8 sm:h-8 bg-neutral-800 rounded flex items-center justify-center border border-neutral-600 hover:border-neutral-400 cursor-pointer transition shadow-inner shrink-0">
+          {/* Classic Roblox Slanted Square Icon (Opens Roblox Esc Menu) */}
+          <div
+            onClick={onOpenEscMenu}
+            className="w-6 h-6 sm:w-8 sm:h-8 bg-neutral-800 rounded flex items-center justify-center border border-neutral-600 hover:border-amber-400 hover:bg-neutral-750 cursor-pointer transition shadow-inner shrink-0"
+            title="Roblox Esc Menu (Esc)"
+          >
             <div className="w-3 h-3 sm:w-3.5 sm:h-3.5 bg-white transform -rotate-12 rounded-sm flex items-center justify-center">
               <div className="w-1.5 h-1.5 bg-neutral-900 rounded-[1px]" />
             </div>
