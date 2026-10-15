@@ -1687,10 +1687,11 @@ export default function App() {
     // Check Ship Helm
     if (world.shipGroup) {
       const helmPos = new THREE.Vector3(22, 2, 85);
-      if (playerPos.distanceTo(helmPos) < 10) {
+      if (playerPos.distanceTo(helmPos) < 11) {
         // Toggle sailing
         const nextSailing = !world.isShipMounted;
         world.isShipMounted = nextSailing;
+        player.isShipMounted = nextSailing;
         setStats((prev) => ({ ...prev, isSailing: nextSailing }));
 
         if (nextSailing) {
@@ -1698,6 +1699,7 @@ export default function App() {
           unlockBadge('badge_shipwright');
           sound.playFanfare();
           player.position.set(22, 4, 85);
+          player.velocity.set(0, 0, 0);
           setMessages((prev) => [
             ...prev,
             {
@@ -1708,6 +1710,10 @@ export default function App() {
               time: 'Now',
             },
           ]);
+        } else {
+          // Dismount safely onto the wooden berthing dock next to Drakkar
+          player.position.set(13.8, 1.59, 83);
+          player.velocity.set(0, 0, 0);
         }
         return;
       }
@@ -3837,6 +3843,10 @@ export default function App() {
         showPerfStats={showPerfStats}
         onTogglePerfStats={() => setShowPerfStats((p) => !p)}
         currentCheckpointName={currentCheckpointName}
+        onOpenHowToPlay={() => {
+          setShowEscMenu(false);
+          setShowHowToPlayModal(true);
+        }}
       />
 
       {/* Roblox Overhead Billboard NameTags, Health Bars & Floating Cartoon Speech Bubbles */}
@@ -5044,6 +5054,24 @@ export default function App() {
               const nextMode = playerRef.current.cycleCameraMode();
               setCameraMode(nextMode);
             }
+          } else if (action === 'siege_tempest') {
+            setShowHowToPlayModal(false);
+            handleBoardDrakkarSiege();
+          } else if (action === 'campaigns') {
+            setShowHowToPlayModal(false);
+            setShowLandingPage(true);
+          } else if (action === 'fishing') {
+            setShowHowToPlayModal(false);
+            setShowFishingModal(true);
+          } else if (action === 'archery') {
+            setShowHowToPlayModal(false);
+            setShowArcheryHUD(true);
+          } else if (action === 'building') {
+            setShowHowToPlayModal(false);
+            setShowBuildingHUD(true);
+          } else if (action === 'conquest') {
+            setShowHowToPlayModal(false);
+            setShowConquestHUD(true);
           }
         }}
       />

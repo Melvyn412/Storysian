@@ -32,6 +32,7 @@ export class CharacterController {
   public isShiftLocked: boolean = false;
   public speedPassMultiplier: number = 1.0;
   public jumpPassMultiplier: number = 1.0;
+  public isShipMounted: boolean = false;
 
   public position: THREE.Vector3;
   public velocity: THREE.Vector3;
@@ -56,6 +57,7 @@ export class CharacterController {
   public hasDoubleJumped: boolean = false;
   public jumpKeyPreviouslyPressed: boolean = false;
   public jumpBoostPromptMultiplier: number = 1.0;
+  private smoothedCamY: number | null = null;
 
   // Drake Flying Mount
   public mountWings: THREE.Group[] = [];
@@ -1382,7 +1384,52 @@ export class CharacterController {
       return;
     }
 
-    // 1. Movement Calculation (with Mount & Gamepass Speed Multipliers)
+    // 1. Ship Mounted Mode (Drakkar Warship Sailing)
+    // Anchors player firmly to the deck without gravity fighting or jumping jitter
+    if (this.isShipMounted) {
+      this.smoothedCamY = null;
+      this.velocity.set(0, 0, 0);
+      this.isGrounded = true;
+      this.hasDoubleJumped = false;
+      this.isValkyrieGliding = false;
+      if (this.valkyrieWingsGroup) this.valkyrieWingsGroup.visible = false;
+
+      // Braced helm stance at the steering oar
+      this.leftLeg.rotation.x = 0;
+      this.rightLeg.rotation.x = 0;
+      this.leftArm.rotation.x = -Math.PI / 3.8;
+      this.rightArm.rotation.x = -Math.PI / 3.8;
+      this.torsoMesh.position.y = 3.4;
+
+      let shakeOffsetX = 0;
+      let shakeOffsetY = 0;
+      if (this.cameraShake > 0) {
+        shakeOffsetX = (Math.random() - 0.5) * this.cameraShake;
+        shakeOffsetY = (Math.random() - 0.5) * this.cameraShake;
+        this.cameraShake = Math.max(0, this.cameraShake - delta * 2.8);
+      }
+
+      const effectiveDist = Math.max(8.0, this.cameraDistance);
+      const pivotX = this.position.x;
+      const pivotY = this.position.y + 2.85;
+      const pivotZ = this.position.z;
+
+      const rawCamX = pivotX + Math.sin(this.cameraYaw) * Math.cos(this.cameraPitch) * effectiveDist + shakeOffsetX;
+      const rawCamY = pivotY + Math.sin(this.cameraPitch) * effectiveDist + shakeOffsetY;
+      const rawCamZ = pivotZ + Math.cos(this.cameraYaw) * Math.cos(this.cameraPitch) * effectiveDist;
+
+      this.cameraTarget.set(
+        pivotX - Math.sin(this.cameraYaw) * 12,
+        pivotY - Math.sin(this.cameraPitch) * 3,
+        pivotZ - Math.cos(this.cameraYaw) * 12
+      );
+
+      camera.position.set(rawCamX, rawCamY, rawCamZ);
+      camera.lookAt(this.cameraTarget);
+      return;
+    }
+
+    // 2. Movement Calculation (with Mount & Gamepass Speed Multipliers)
     const mountBoost =
       this.activeMountId === 'mount_frost_drake'
         ? 2.3
@@ -1565,10 +1612,18 @@ export class CharacterController {
       }
     }
 
-    // Ground check (Plateau height is y=3, ocean shore is y=1, plus floating Sky Obby platforms)
-    const baseGround = (this.position.z > 50 && this.position.z < 185) ? 1.0 : 3.0;
+    // Ground check: smooth continuous slope from Village Plateau (y=3.0) to Harbor Shore & Docks (y=1.0)
+    let baseGround = 3.0;
+    if (this.position.z >= 62) {
+      baseGround = 1.0;
+    } else if (this.position.z > 38) {
+      const t = (this.position.z - 38) / 24;
+      const smoothT = t * t * (3 - 2 * t);
+      baseGround = 3.0 - smoothT * 2.0;
+    }
     let groundLevel = baseGround + 0.24; // Align feet on top of ground blocks
 
+    // Solid Obby, Pier & Dock Platform Collision (allows walking, jumping, and landing without height jitter)
     if (obbyPlatforms && obbyPlatforms.length > 0) {
       for (const plat of obbyPlatforms) {
         if (
@@ -1576,7 +1631,9 @@ export class CharacterController {
           Math.abs(this.position.z - plat.z) <= plat.halfD
         ) {
           const platSurface = plat.y + 0.24;
-          if (prevY >= platSurface - 0.85 && platSurface > groundLevel) {
+          // Platform collision: player lands or stands on top if they were above/at surface level
+          const isAboveOrAtSurface = prevY >= platSurface - 0.45 || this.isGrounded;
+          if (isAboveOrAtSurface && platSurface > groundLevel) {
             groundLevel = platSurface;
           }
         }
@@ -1766,9 +1823,15 @@ export class CharacterController {
       const rawCamY = pivotY + Math.sin(this.cameraPitch) * effectiveDist + shakeOffsetY;
       const rawCamZ = pivotZ + Math.cos(this.cameraYaw) * Math.cos(this.cameraPitch) * effectiveDist;
 
-      // Prevent camera from clipping below terrain/water when tilting up
+      // Prevent camera from clipping below terrain/water when tilting up with smooth damping
       const minCamY = groundLevel + 0.6;
-      const camY = Math.max(minCamY, rawCamY);
+      const targetCamY = Math.max(minCamY, rawCamY);
+      if (this.smoothedCamY === null) {
+        this.smoothedCamY = targetCamY;
+      } else {
+        this.smoothedCamY = THREE.MathUtils.lerp(this.smoothedCamY, targetCamY, Math.min(1, 24 * delta));
+      }
+      const camY = this.smoothedCamY;
 
       // When looking UP (cameraPitch < 0.18), shift cameraTarget upward & ahead along the gaze ray
       // so the player can look high up into the sky, mountain peaks, and towering structures

@@ -170,14 +170,14 @@ export const RobloxTopBar: React.FC<RobloxTopBarProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+          <h1 className="flex items-center gap-1.5 shrink-0 whitespace-nowrap m-0 p-0 text-inherit font-normal">
             <span className="font-extrabold tracking-wide text-amber-400 font-['Cinzel',serif] text-xs sm:text-base drop-shadow whitespace-nowrap leading-normal">
               STORYSIAN
             </span>
             <span className="hidden sm:inline-block px-1.5 py-0.5 text-[9px] sm:text-[10px] font-bold bg-red-700 text-red-100 rounded tracking-wider uppercase whitespace-nowrap shrink-0">
               RAIDS
             </span>
-          </div>
+          </h1>
 
           {/* Compact Mobile Stats Badge (Visible on small screens) */}
           <div className="flex md:hidden items-center gap-1.5 px-2 py-0.5 bg-neutral-800/90 rounded border border-neutral-700/80 text-[11px] font-bold shrink-0">
@@ -295,7 +295,7 @@ export const RobloxTopBar: React.FC<RobloxTopBarProps> = ({
             </button>
           )}
 
-          {/* How to Play & Keyboard Shortcuts Guide Button [?] (Desktop) */}
+          {/* Features, What's New & Controls Guide Button [?] (Desktop) */}
           {onToggleHowToPlay && (
             <button
               onClick={onToggleHowToPlay}
@@ -304,10 +304,10 @@ export const RobloxTopBar: React.FC<RobloxTopBarProps> = ({
                   ? 'bg-amber-400 text-neutral-950 shadow-md ring-1 ring-amber-200'
                   : 'bg-amber-950/85 hover:bg-amber-900 text-amber-300 border border-amber-500/60'
               }`}
-              title="How to Play, WASD & Keyboard Shortcuts [?]"
+              title="Where to Find All Features, What's New & Controls Guide [?]"
             >
-              <HelpCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span>How to Play</span>
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span>Features &amp; Guide</span>
               <span className="hidden xl:inline text-[9px] text-amber-200 font-mono">[?]</span>
             </button>
           )}
@@ -654,7 +654,7 @@ export const RobloxTopBar: React.FC<RobloxTopBarProps> = ({
               </button>
             )}
 
-            {/* How to Play & Controls Guide */}
+            {/* Features & Controls Guide */}
             {onToggleHowToPlay && (
               <button
                 onClick={() => {
@@ -665,11 +665,11 @@ export const RobloxTopBar: React.FC<RobloxTopBarProps> = ({
               >
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-400/30 flex items-center justify-center">
-                    <HelpCircle className="w-4 h-4 text-amber-400" />
+                    <Sparkles className="w-4 h-4 text-amber-400" />
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-amber-300">How to Play &amp; Controls [?]</div>
-                    <div className="text-[10px] text-neutral-400">Touch, WASD, Skills &amp; Guide</div>
+                    <div className="text-xs font-bold text-amber-300">All Features &amp; Guide [?]</div>
+                    <div className="text-[10px] text-neutral-400">Armada, Realms, Controls &amp; Modes</div>
                   </div>
                 </div>
                 <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wide">View</span>

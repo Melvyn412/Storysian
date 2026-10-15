@@ -13,11 +13,17 @@ import {
   Shield,
   Eye,
   Play,
+  Anchor,
+  Fish,
+  Target,
+  Hammer,
+  Skull,
 } from 'lucide-react';
 
 interface HowToPlayModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialTab?: 'features' | 'controls' | 'realms' | 'modes';
   onQuickAction?: (
     action:
       | 'young_viking'
@@ -29,6 +35,12 @@ interface HowToPlayModalProps {
       | 'armory'
       | 'weather'
       | 'camera'
+      | 'siege_tempest'
+      | 'fishing'
+      | 'archery'
+      | 'building'
+      | 'campaigns'
+      | 'conquest'
   ) => void;
 }
 
@@ -227,9 +239,10 @@ const REALM_SHORTCUTS: ShortcutItem[] = [
 export const HowToPlayModal: React.FC<HowToPlayModalProps> = ({
   isOpen,
   onClose,
+  initialTab = 'features',
   onQuickAction,
 }) => {
-  const [activeTab, setActiveTab] = useState<'controls' | 'realms' | 'modes'>('controls');
+  const [activeTab, setActiveTab] = useState<'features' | 'controls' | 'realms' | 'modes'>(initialTab);
 
   if (!isOpen) return null;
 
@@ -254,12 +267,12 @@ export const HowToPlayModal: React.FC<HowToPlayModalProps> = ({
           <div>
             <div className="flex items-center gap-2 text-xs font-semibold text-amber-400">
               <HelpCircle className="w-4 h-4" />
-              <span>VIKING CODEX &amp; KEYBOARD SHORTCUTS</span>
+              <span>VIKING CODEX &amp; FEATURE DIRECTORY</span>
               <span aria-hidden="true">·</span>
               <span className="text-emerald-400">Press [?] or [ESC] Anytime</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white font-['Cinzel',serif] mt-0.5">
-              How to Play &amp; Controls Guide
+              Realm Guide &amp; All Game Features
             </h2>
           </div>
 
@@ -274,6 +287,18 @@ export const HowToPlayModal: React.FC<HowToPlayModalProps> = ({
 
         {/* Segmented Tabs */}
         <div className="flex flex-wrap items-center gap-2 px-6 py-3 border-b border-neutral-800 bg-neutral-900/50">
+          <button
+            onClick={() => setActiveTab('features')}
+            className={`px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition cursor-pointer ${
+              activeTab === 'features'
+                ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 shadow-md ring-2 ring-amber-300'
+                : 'bg-neutral-900 text-neutral-300 hover:bg-neutral-800 border border-neutral-800'
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-slate-950" />
+            <span>✨ Where to Find All Features</span>
+          </button>
+
           <button
             onClick={() => setActiveTab('controls')}
             className={`px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition cursor-pointer ${
@@ -306,13 +331,413 @@ export const HowToPlayModal: React.FC<HowToPlayModalProps> = ({
                 : 'bg-neutral-900 text-neutral-300 hover:bg-neutral-800 border border-neutral-800'
             }`}
           >
-            <Sparkles className="w-4 h-4" />
-            All Game Modes &amp; Quick Teleport
+            <Shield className="w-4 h-4" />
+            All Game Modes &amp; Teleports
           </button>
         </div>
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
+          {activeTab === 'features' && (
+            <div className="space-y-6">
+              {/* Quick Navigation Directory Banner */}
+              <div className="p-4 rounded-xl bg-gradient-to-r from-amber-950/70 via-neutral-900 to-sky-950/50 border border-amber-500/50 shadow-lg">
+                <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-amber-300">
+                  <Compass className="w-4 h-4 text-amber-400" />
+                  <span>Quick Feature Navigation Directory</span>
+                </div>
+                <h3 className="text-base sm:text-lg font-bold text-white mt-1">
+                  Where to Access Every Feature in the Realm
+                </h3>
+                <p className="text-xs text-neutral-300 mt-1 leading-relaxed">
+                  Every game feature is accessible via top-bar buttons, hotbar slots, and keyboard shortcuts:
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
+                  <div className="p-2.5 rounded-lg bg-neutral-950/80 border border-neutral-800">
+                    <div className="text-[11px] font-bold text-amber-400">1. Top Navigation Bar</div>
+                    <div className="text-[11px] text-neutral-300 mt-0.5">
+                      War Council <span className="text-amber-300 font-mono">[M]</span>, Multiplayer <span className="text-emerald-300 font-mono">[P]</span>, Young Viking <span className="text-teal-300 font-mono">[Y]</span>, Armory <span className="text-sky-300 font-mono">[H]</span>.
+                    </div>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-neutral-950/80 border border-neutral-800">
+                    <div className="text-[11px] font-bold text-sky-400">2. Bottom Hotbar [1-8]</div>
+                    <div className="text-[11px] text-neutral-300 mt-0.5">
+                      1 Axe · 2 Shield · 3 War Horn · 4 Mead · 5 Torch · 6 Hammer <span className="text-amber-300 font-mono">[U]</span> · 7 Fishing <span className="text-teal-300 font-mono">[K]</span> · 8 Bow <span className="text-red-300 font-mono">[O]</span>.
+                    </div>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-neutral-950/80 border border-neutral-800">
+                    <div className="text-[11px] font-bold text-emerald-400">3. Drakkar Longship Helm</div>
+                    <div className="text-[11px] text-neutral-300 mt-0.5">
+                      Board at Katfjord Pier or start Frostfang Siege. Controls: <span className="text-amber-300 font-mono">[H]</span> Rally Armada, <span className="text-sky-300 font-mono">[R]</span> Ballista, Formation selector.
+                    </div>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-neutral-950/80 border border-neutral-800">
+                    <div className="text-[11px] font-bold text-purple-400">4. Roblox Esc Menu [ESC]</div>
+                    <div className="text-[11px] text-neutral-300 mt-0.5">
+                      Click the slanted logo in the top-left or tap <span className="text-amber-300 font-mono">[ESC]</span> to browse all game modes, leaderboards, and realm portals.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Grid of All Features */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* 1. Thor's Tempest Drakkar Armada & 24 NPC Fleet */}
+                <div className="p-4 rounded-xl bg-gradient-to-br from-sky-950/60 via-neutral-900 to-amber-950/40 border border-sky-500/50 shadow-md flex flex-col justify-between gap-3">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-sky-400 flex items-center gap-1.5">
+                        <Anchor className="w-4 h-4 text-sky-400" />
+                        NEW · Thor's Tempest Armada
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <kbd className="px-2 py-0.5 rounded bg-neutral-800 text-amber-300 font-mono text-xs font-bold">
+                          [H] War Horn
+                        </kbd>
+                        <kbd className="px-2 py-0.5 rounded bg-neutral-800 text-sky-300 font-mono text-xs font-bold">
+                          [R] Ballista
+                        </kbd>
+                      </div>
+                    </div>
+                    <h4 className="text-base font-bold text-white mt-1.5">
+                      6-Ship Escort Armada &amp; 24 NPC Shield-Brothers
+                    </h4>
+                    <p className="text-xs text-neutral-300 mt-1 leading-relaxed">
+                      Sailing through Thor's Tempest now deploys an armada of 6 escort warships with 24 animated NPC Norse shield-brothers rowing in sync, cheering, and shouting authentic battle cries.
+                    </p>
+                    <div className="mt-2 p-2 rounded-lg bg-neutral-950/80 border border-neutral-800 text-[11px] text-neutral-300 space-y-1">
+                      <div><strong className="text-amber-300">Where to find:</strong> Board Drakkar at Katfjord Pier (X:22, Z:85) or launch Siege of Frostfang Isle.</div>
+                      <div><strong className="text-sky-300">Fleet Formations:</strong> Use Helm HUD buttons to toggle <span className="text-white font-semibold">Wedge</span>, <span className="text-white font-semibold">Line</span>, or <span className="text-white font-semibold">Convoy</span>.</div>
+                      <div><strong className="text-emerald-300">Rally Horn:</strong> Press <span className="text-white font-semibold">[H]</span> to sound the Gjallarhorn and trigger fleet battle chants!</div>
+                    </div>
+                  </div>
+                  {onQuickAction && (
+                    <button
+                      onClick={() => {
+                        onClose();
+                        onQuickAction('siege_tempest');
+                      }}
+                      className="w-full py-2.5 rounded-xl bg-gradient-to-r from-sky-600 to-amber-600 hover:from-sky-500 hover:to-amber-500 text-slate-950 font-black text-xs flex items-center justify-center gap-2 transition cursor-pointer shadow-md"
+                    >
+                      <Play className="w-3.5 h-3.5" />
+                      Deploy Thor's Tempest Fleet Armada Now
+                    </button>
+                  )}
+                </div>
+
+                {/* 2. War Council & Battle Campaigns */}
+                <div className="p-4 rounded-xl bg-gradient-to-br from-amber-950/50 via-neutral-900 to-neutral-900 border border-amber-500/40 shadow-md flex flex-col justify-between gap-3">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                        <Swords className="w-4 h-4 text-amber-400" />
+                        Campaign Mode
+                      </span>
+                      <kbd className="px-2 py-0.5 rounded bg-neutral-800 text-amber-300 font-mono text-xs font-bold">
+                        Key: M
+                      </kbd>
+                    </div>
+                    <h4 className="text-base font-bold text-white mt-1.5">
+                      War Council &amp; Epic Siege Campaigns
+                    </h4>
+                    <p className="text-xs text-neutral-300 mt-1 leading-relaxed">
+                      Select campaign operations: <span className="text-white font-semibold">Siege of Frostfang Isle</span> (amphibious naval invasion), <span className="text-white font-semibold">Defend Katfjord Village</span> (Saxon waves), and Co-Op World Bosses.
+                    </p>
+                    <div className="mt-2 p-2 rounded-lg bg-neutral-950/80 border border-neutral-800 text-[11px] text-neutral-300 space-y-1">
+                      <div><strong className="text-amber-300">Where to find:</strong> Click <span className="text-white font-semibold">"War Council"</span> on top-right HUD or press <span className="text-white font-semibold">[M]</span>.</div>
+                      <div><strong className="text-emerald-300">Rewards:</strong> Silver coins, valor ranks, legendary weapons, and saga achievements.</div>
+                    </div>
+                  </div>
+                  {onQuickAction && (
+                    <button
+                      onClick={() => {
+                        onClose();
+                        onQuickAction('campaigns');
+                      }}
+                      className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer shadow"
+                    >
+                      <Play className="w-3.5 h-3.5" />
+                      Open War Council &amp; Campaigns [M]
+                    </button>
+                  )}
+                </div>
+
+                {/* 3. Live Multiplayer Realms */}
+                <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-950/50 via-neutral-900 to-neutral-900 border border-emerald-500/40 shadow-md flex flex-col justify-between gap-3">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                        <Radio className="w-4 h-4 text-emerald-400" />
+                        Multiplayer Hub
+                      </span>
+                      <kbd className="px-2 py-0.5 rounded bg-neutral-800 text-emerald-300 font-mono text-xs font-bold">
+                        Key: P
+                      </kbd>
+                    </div>
+                    <h4 className="text-base font-bold text-white mt-1.5">
+                      Real-Time Multiplayer Realms &amp; Co-Op Bosses
+                    </h4>
+                    <p className="text-xs text-neutral-300 mt-1 leading-relaxed">
+                      Connect with players across live rooms. Battle Surtr the Fire Golem together, challenge warriors to Holmgang duels, or roam Katfjord as a warband.
+                    </p>
+                    <div className="mt-2 p-2 rounded-lg bg-neutral-950/80 border border-neutral-800 text-[11px] text-neutral-300 space-y-1">
+                      <div><strong className="text-emerald-300">Where to find:</strong> Click <span className="text-white font-semibold">"Multiplayer"</span> badge in top bar or press <span className="text-white font-semibold">[P]</span>.</div>
+                      <div><strong className="text-sky-300">Features:</strong> Room switching, room codes, real-time player avatars, and overhead clan tags.</div>
+                    </div>
+                  </div>
+                  {onQuickAction && (
+                    <button
+                      onClick={() => {
+                        onClose();
+                        onQuickAction('multiplayer');
+                      }}
+                      className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer shadow"
+                    >
+                      <Play className="w-3.5 h-3.5" />
+                      Open Multiplayer &amp; Boss Hub [P]
+                    </button>
+                  )}
+                </div>
+
+                {/* 4. Young Viking Forager Meadow */}
+                <div className="p-4 rounded-xl bg-gradient-to-br from-teal-950/50 via-neutral-900 to-neutral-900 border border-teal-500/40 shadow-md flex flex-col justify-between gap-3">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-teal-400 flex items-center gap-1.5">
+                        <TreePine className="w-4 h-4 text-teal-400" />
+                        Peaceful Sandbox
+                      </span>
+                      <kbd className="px-2 py-0.5 rounded bg-neutral-800 text-teal-300 font-mono text-xs font-bold">
+                        Key: Y
+                      </kbd>
+                    </div>
+                    <h4 className="text-base font-bold text-white mt-1.5">
+                      Young Viking Forager Meadow Realm
+                    </h4>
+                    <p className="text-xs text-neutral-300 mt-1 leading-relaxed">
+                      Transform into a Young Viking Apprentice with a woven back-basket. Roam a tranquil sunlit meadow with zero hostile enemies, auto-forage berries, and craft at the campfire.
+                    </p>
+                    <div className="mt-2 p-2 rounded-lg bg-neutral-950/80 border border-neutral-800 text-[11px] text-neutral-300 space-y-1">
+                      <div><strong className="text-teal-300">Where to find:</strong> Click <span className="text-white font-semibold">"Young Viking"</span> in top bar or press <span className="text-white font-semibold">[Y]</span>.</div>
+                      <div><strong className="text-amber-300">Highlights:</strong> Auto-wandering mode, butterfly trails, herbal teas, and basket inventory.</div>
+                    </div>
+                  </div>
+                  {onQuickAction && (
+                    <button
+                      onClick={() => {
+                        onClose();
+                        onQuickAction('young_viking');
+                      }}
+                      className="w-full py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer shadow"
+                    >
+                      <Play className="w-3.5 h-3.5" />
+                      Enter Young Viking Meadow [Y]
+                    </button>
+                  )}
+                </div>
+
+                {/* 5. Fortress Base Building */}
+                <div className="p-4 rounded-xl bg-gradient-to-br from-amber-950/40 via-neutral-900 to-neutral-900 border border-neutral-700 shadow-md flex flex-col justify-between gap-3">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                        <Hammer className="w-4 h-4 text-amber-400" />
+                        Base Building
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <kbd className="px-2 py-0.5 rounded bg-neutral-800 text-amber-300 font-mono text-xs font-bold">
+                          Key: U
+                        </kbd>
+                        <kbd className="px-2 py-0.5 rounded bg-neutral-800 text-amber-300 font-mono text-xs font-bold">
+                          Slot 6
+                        </kbd>
+                      </div>
+                    </div>
+                    <h4 className="text-base font-bold text-white mt-1.5">
+                      Fortress Construction &amp; Automated Defenses
+                    </h4>
+                    <p className="text-xs text-neutral-300 mt-1 leading-relaxed">
+                      Place timber palisade walls, archer watchtowers, automated defense ballistas, heavy gates, and defensive spike traps to fortify your perimeter.
+                    </p>
+                    <div className="mt-2 p-2 rounded-lg bg-neutral-950/80 border border-neutral-800 text-[11px] text-neutral-300 space-y-1">
+                      <div><strong className="text-amber-300">Where to find:</strong> Press <span className="text-white font-semibold">[U]</span> or select the <span className="text-white font-semibold">Builder Hammer</span> (Slot 6) on the hotbar.</div>
+                    </div>
+                  </div>
+                  {onQuickAction && (
+                    <button
+                      onClick={() => {
+                        onClose();
+                        onQuickAction('building');
+                      }}
+                      className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer shadow"
+                    >
+                      <Play className="w-3.5 h-3.5" />
+                      Open Fortress Construction [U]
+                    </button>
+                  )}
+                </div>
+
+                {/* 6. Norse Archery Range */}
+                <div className="p-4 rounded-xl bg-gradient-to-br from-red-950/40 via-neutral-900 to-neutral-900 border border-neutral-700 shadow-md flex flex-col justify-between gap-3">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-rose-400 flex items-center gap-1.5">
+                        <Target className="w-4 h-4 text-rose-400" />
+                        Marksmanship
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <kbd className="px-2 py-0.5 rounded bg-neutral-800 text-rose-300 font-mono text-xs font-bold">
+                          Key: O
+                        </kbd>
+                        <kbd className="px-2 py-0.5 rounded bg-neutral-800 text-rose-300 font-mono text-xs font-bold">
+                          Slot 8
+                        </kbd>
+                      </div>
+                    </div>
+                    <h4 className="text-base font-bold text-white mt-1.5">
+                      Norse Archery Range &amp; Ballistic Arrows
+                    </h4>
+                    <p className="text-xs text-neutral-300 mt-1 leading-relaxed">
+                      Practice long-range marksmanship with realistic arrow arcs. Right-click to aim, hold left-click to draw string tension, and release to strike targets.
+                    </p>
+                    <div className="mt-2 p-2 rounded-lg bg-neutral-950/80 border border-neutral-800 text-[11px] text-neutral-300 space-y-1">
+                      <div><strong className="text-rose-300">Where to find:</strong> Press <span className="text-white font-semibold">[O]</span> or equip the <span className="text-white font-semibold">Norse Longbow</span> (Slot 8) on the hotbar.</div>
+                    </div>
+                  </div>
+                  {onQuickAction && (
+                    <button
+                      onClick={() => {
+                        onClose();
+                        onQuickAction('archery');
+                      }}
+                      className="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer shadow"
+                    >
+                      <Play className="w-3.5 h-3.5" />
+                      Open Archery Range [O]
+                    </button>
+                  )}
+                </div>
+
+                {/* 7. Fjord Deep-Sea Fishing */}
+                <div className="p-4 rounded-xl bg-gradient-to-br from-cyan-950/40 via-neutral-900 to-neutral-900 border border-neutral-700 shadow-md flex flex-col justify-between gap-3">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
+                        <Fish className="w-4 h-4 text-cyan-400" />
+                        Mini-Game
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <kbd className="px-2 py-0.5 rounded bg-neutral-800 text-cyan-300 font-mono text-xs font-bold">
+                          Key: K
+                        </kbd>
+                        <kbd className="px-2 py-0.5 rounded bg-neutral-800 text-cyan-300 font-mono text-xs font-bold">
+                          Slot 7
+                        </kbd>
+                      </div>
+                    </div>
+                    <h4 className="text-base font-bold text-white mt-1.5">
+                      Fjord Deep-Sea Fishing Mini-Game
+                    </h4>
+                    <p className="text-xs text-neutral-300 mt-1 leading-relaxed">
+                      Approach the water at Katfjord Pier or open fjord. Cast your bobber, wait for bites, balance tension, and reel in salmon, cod, and mythical sea relics.
+                    </p>
+                    <div className="mt-2 p-2 rounded-lg bg-neutral-950/80 border border-neutral-800 text-[11px] text-neutral-300 space-y-1">
+                      <div><strong className="text-cyan-300">Where to find:</strong> Press <span className="text-white font-semibold">[K]</span> or select the <span className="text-white font-semibold">Fishing Rod</span> (Slot 7).</div>
+                    </div>
+                  </div>
+                  {onQuickAction && (
+                    <button
+                      onClick={() => {
+                        onClose();
+                        onQuickAction('fishing');
+                      }}
+                      className="w-full py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer shadow"
+                    >
+                      <Play className="w-3.5 h-3.5" />
+                      Start Fishing [K]
+                    </button>
+                  )}
+                </div>
+
+                {/* 8. Drakkar Armory & Vessel Customization */}
+                <div className="p-4 rounded-xl bg-gradient-to-br from-indigo-950/40 via-neutral-900 to-neutral-900 border border-neutral-700 shadow-md flex flex-col justify-between gap-3">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+                        <Ship className="w-4 h-4 text-indigo-400" />
+                        Naval Armory
+                      </span>
+                      <kbd className="px-2 py-0.5 rounded bg-neutral-800 text-indigo-300 font-mono text-xs font-bold">
+                        Key: H
+                      </kbd>
+                    </div>
+                    <h4 className="text-base font-bold text-white mt-1.5">
+                      Naval Armory &amp; Figurehead Customization
+                    </h4>
+                    <p className="text-xs text-neutral-300 mt-1 leading-relaxed">
+                      Equip unlocked Golden Dragon, Wolf, and Raven prow figureheads, striped sails, raven standards, and runic shields to personalize your warship.
+                    </p>
+                    <div className="mt-2 p-2 rounded-lg bg-neutral-950/80 border border-neutral-800 text-[11px] text-neutral-300 space-y-1">
+                      <div><strong className="text-indigo-300">Where to find:</strong> Click <span className="text-white font-semibold">"Armory"</span> in the top bar or press <span className="text-white font-semibold">[H]</span> while on land.</div>
+                    </div>
+                  </div>
+                  {onQuickAction && (
+                    <button
+                      onClick={() => {
+                        onClose();
+                        onQuickAction('armory');
+                      }}
+                      className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer shadow"
+                    >
+                      <Play className="w-3.5 h-3.5" />
+                      Open Naval Armory [H]
+                    </button>
+                  )}
+                </div>
+
+                {/* 9. Draugr Crypt Underworld Dungeon */}
+                <div className="p-4 rounded-xl bg-gradient-to-br from-purple-950/40 via-neutral-900 to-neutral-900 border border-neutral-700 shadow-md flex flex-col justify-between gap-3">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-purple-400 flex items-center gap-1.5">
+                        <Skull className="w-4 h-4 text-purple-400" />
+                        Dungeon Raid
+                      </span>
+                      <kbd className="px-2 py-0.5 rounded bg-neutral-800 text-purple-300 font-mono text-xs font-bold">
+                        Portal [E]
+                      </kbd>
+                    </div>
+                    <h4 className="text-base font-bold text-white mt-1.5">
+                      Ancient Draugr Crypt Underworld Dungeon
+                    </h4>
+                    <p className="text-xs text-neutral-300 mt-1 leading-relaxed">
+                      Delve into the subterranean crypt barrow, dodge swinging pendulum soul-scythes, defeat undead skeletal guardians, and loot runic chests.
+                    </p>
+                    <div className="mt-2 p-2 rounded-lg bg-neutral-950/80 border border-neutral-800 text-[11px] text-neutral-300 space-y-1">
+                      <div><strong className="text-purple-300">Where to find:</strong> Enter via barrow mound portal or select Crypt in Roblox Esc Menu [ESC].</div>
+                    </div>
+                  </div>
+                  {onQuickAction && (
+                    <button
+                      onClick={() => {
+                        onClose();
+                        onQuickAction('niflheim');
+                      }}
+                      className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer shadow"
+                    >
+                      <Play className="w-3.5 h-3.5" />
+                      Enter Draugr Crypt Dungeon
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'controls' && (
             <>
               {/* Visual WASD + Mouse Quick-Start Banner */}

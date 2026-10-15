@@ -790,13 +790,109 @@ export class VikingWorld {
    * The Viking Longship (Drakkar) at the Docks
    */
   private buildVikingLongship() {
-    // Dock pier
-    const pierMat = new THREE.MeshStandardMaterial({ color: 0x3a2514, roughness: 0.85 });
-    const pier = new THREE.Mesh(new THREE.BoxGeometry(12, 1.5, 42), pierMat);
-    pier.position.set(0, 0, 75);
-    pier.castShadow = true;
-    pier.receiveShadow = true;
-    this.scene.add(pier);
+    // 1. Katfjord Harbor Dock System (Solid, stable wooden piers with ramp and berthing walkways)
+    const pierMat = new THREE.MeshStandardMaterial({ color: 0x3a2514, roughness: 0.82 });
+    const pierPlankMat = new THREE.MeshStandardMaterial({ color: 0x4a321c, roughness: 0.78 });
+    const pilingMat = new THREE.MeshStandardMaterial({ color: 0x22150a, roughness: 0.95 });
+
+    // Shore-to-dock wooden entry ramp from village grass down to dock surface
+    const entryRamp = new THREE.Mesh(new THREE.BoxGeometry(14, 0.45, 18), pierPlankMat);
+    entryRamp.position.set(0, 2.15, 52);
+    entryRamp.rotation.x = 0.095;
+    entryRamp.castShadow = true;
+    entryRamp.receiveShadow = true;
+    this.scene.add(entryRamp);
+
+    // Main Central Harbor Pier (x: 0, top surface y: 1.35)
+    const mainPier = new THREE.Mesh(new THREE.BoxGeometry(14, 1.2, 42), pierMat);
+    mainPier.position.set(0, 0.75, 75);
+    mainPier.castShadow = true;
+    mainPier.receiveShadow = true;
+    this.scene.add(mainPier);
+
+    // Cross Pier / Gangway leading from Central Pier to Drakkar Berthing Boardwalk (x: 0 to x: 14)
+    const crossPier = new THREE.Mesh(new THREE.BoxGeometry(14, 1.2, 12), pierPlankMat);
+    crossPier.position.set(7, 0.75, 83);
+    crossPier.castShadow = true;
+    crossPier.receiveShadow = true;
+    this.scene.add(crossPier);
+
+    // Drakkar Berthing Boardwalk running along port side of ship (x: 11 to x: 16.6, z: 72 to 104)
+    const embarkBoardwalk = new THREE.Mesh(new THREE.BoxGeometry(5.6, 1.2, 32), pierMat);
+    embarkBoardwalk.position.set(13.8, 0.75, 88);
+    embarkBoardwalk.castShadow = true;
+    embarkBoardwalk.receiveShadow = true;
+    this.scene.add(embarkBoardwalk);
+
+    // Wooden Boarding Gangway connecting Dock Boardwalk to Drakkar Deck Entrance
+    const gangwayPlank = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.35, 5.0), pierPlankMat);
+    gangwayPlank.position.set(18.2, 1.45, 85);
+    gangwayPlank.rotation.z = -0.06;
+    gangwayPlank.castShadow = true;
+    gangwayPlank.receiveShadow = true;
+    this.scene.add(gangwayPlank);
+
+    // Vertical wooden dock pilings extending into the seabed
+    const pilingGeo = new THREE.CylinderGeometry(0.38, 0.42, 4.5, 8);
+    const pilingPositions = [
+      [-6, 60], [6, 60], [-6, 75], [6, 75], [-6, 92], [6, 92],
+      [11.5, 74], [16.2, 74], [11.5, 88], [16.2, 88], [11.5, 102], [16.2, 102]
+    ];
+    pilingPositions.forEach(([px, pz]) => {
+      const piling = new THREE.Mesh(pilingGeo, pilingMat);
+      piling.position.set(px, -0.6, pz);
+      piling.castShadow = true;
+      this.scene.add(piling);
+    });
+
+    // Mooring bollards on dock alongside Drakkar
+    const bollardGeo = new THREE.CylinderGeometry(0.24, 0.28, 0.8, 8);
+    const bollardMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, metalness: 0.8, roughness: 0.3 });
+    [ [16.2, 76], [16.2, 88], [16.2, 100] ].forEach(([bx, bz]) => {
+      const bollard = new THREE.Mesh(bollardGeo, bollardMat);
+      bollard.position.set(bx, 1.75, bz);
+      this.scene.add(bollard);
+    });
+
+    // Warm dock lantern posts for atmospheric harbor lighting
+    const lanternMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+    [ [0, 64], [0, 92], [11.5, 74], [11.5, 102] ].forEach(([lx, lz], i) => {
+      const post = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.12, 0.16, 3.2, 6),
+        pilingMat
+      );
+      post.position.set(lx, 2.8, lz);
+      this.scene.add(post);
+
+      const lantern = new THREE.Mesh(
+        new THREE.BoxGeometry(0.45, 0.55, 0.45),
+        lanternMat
+      );
+      lantern.position.set(lx, 4.2, lz);
+      this.scene.add(lantern);
+
+      if (i % 2 === 0) {
+        const dLight = new THREE.PointLight(0xf59e0b, 1.8, 18);
+        dLight.position.set(lx, 4.2, lz);
+        this.scene.add(dLight);
+      }
+    });
+
+    // Register solid, non-conflicting dock walkways into obbyPlatforms for collision detection
+    this.obbyPlatforms.push(
+      // Shore entry ramp from village grass plateau down to dock surface
+      { x: 0, y: 1.95, z: 52, halfW: 7.2, halfD: 9.2 },
+      // Main central pier
+      { x: 0, y: 1.35, z: 75, halfW: 7.2, halfD: 21.5 },
+      // Cross pier connecting to Drakkar berth
+      { x: 7, y: 1.35, z: 83, halfW: 7.2, halfD: 6.2 },
+      // Drakkar embarkation boardwalk alongside ship
+      { x: 13.8, y: 1.35, z: 88, halfW: 2.9, halfD: 16.2 },
+      // Boarding gangway connecting dock to Drakkar deck
+      { x: 18.2, y: 1.55, z: 85, halfW: 1.9, halfD: 2.6 },
+      // Moored Drakkar ship deck platform
+      { x: 22, y: 2.05, z: 95, halfW: 3.2, halfD: 12.8 }
+    );
 
     // Ship Group
     this.shipGroup = new THREE.Group();
@@ -936,7 +1032,7 @@ export class VikingWorld {
 
     // Glowing Golden Runic Beacon Pillar at Katfjord Pier for onboarding & waypoint guidance
     this.pierWaypointBeacon = new THREE.Group();
-    this.pierWaypointBeacon.position.set(22, 1.5, 83);
+    this.pierWaypointBeacon.position.set(13.8, 1.5, 83);
     this.pierWaypointBeacon.visible = false;
 
     // Vertical ethereal golden beam of light
@@ -2846,8 +2942,15 @@ export class VikingWorld {
     const t = customTime ?? this.clock.getElapsedTime();
     const baseWaterY = -1.8;
 
-    // Coastline damping: calm near the docks (Z < 80), wild rough open ocean (Z >= 90)
-    const shoreFactor = THREE.MathUtils.clamp((worldZ - 60) / 45, 0.3, 1.0);
+    // Harbor Basin Protection: Inner Katfjord harbor (Z < 105) is sheltered by natural fjord cliffs
+    // Inside the harbor near the wooden docks (Z <= 102), water has gentle calm mooring ripples (0.02)
+    // Open ocean waves ramp up smoothly past the harbor mouth (Z >= 115)
+    let shoreFactor = 0.02;
+    if (worldZ > 102) {
+      const normZ = THREE.MathUtils.clamp((worldZ - 102) / 24, 0, 1);
+      const ease = normZ * normZ * (3 - 2 * normZ);
+      shoreFactor = THREE.MathUtils.lerp(0.02, 1.0, ease);
+    }
 
     if (this.weather === 'stormy') {
       // Formidable Norse tempest: tall rolling swells + turbulent cross-waves + sharp whitecap chops
@@ -3280,21 +3383,45 @@ export class VikingWorld {
       const portH = this.getWaterHeight(portPos.x, portPos.z, elapsed);
       const starH = this.getWaterHeight(starPos.x, starPos.z, elapsed);
 
-      // Ship target elevation follows water surface with nautical draft offset (1.25m)
-      const targetY = centerH + 1.25;
-      const heaveSpeed = this.weather === 'stormy' ? 7.5 : 4.0;
+      // Harbor Dock Slip Stability: When in the harbor slip at the docks (Z < 105, |X| < 35),
+      // the Drakkar is secured to the berthing piers with heavy mooring lines.
+      // Even when mounted, while stationary or preparing to cast off (speed < 1.0 and Z < 104),
+      // the ship remains resting solidly in the water with zero vertical heave and no jumping up and down!
+      const isAtDock = shipPos.z < 105 && Math.abs(shipPos.x) < 35;
+      const isUnderway = this.isShipMounted && (Math.abs(this.shipSpeed) > 1.2 || shipPos.z > 104);
+
+      const baseWaterY = -1.8;
+      let targetY: number;
+      let targetPitch: number;
+      let targetRoll: number;
+      let heaveSpeed: number;
+      let rotSpeed: number;
+
+      if (isAtDock && !isUnderway) {
+        // Completely stable harbor mooring elevation — perfectly calm with zero vertical jumping
+        targetY = baseWaterY + 1.25;
+        targetPitch = 0;
+        targetRoll = 0;
+        heaveSpeed = 3.0;
+        rotSpeed = 3.0;
+      } else {
+        // Open water sailing / underway: smooth hydrodynamic wave heave, pitch, and roll
+        const oceanBlend = isAtDock
+          ? THREE.MathUtils.clamp((shipPos.z - 98) / 10, 0.2, 1.0) * Math.min(1.0, Math.abs(this.shipSpeed) / 4.0)
+          : 1.0;
+        const waveY = centerH + 1.25;
+        targetY = THREE.MathUtils.lerp(baseWaterY + 1.25, waveY, oceanBlend);
+        targetPitch = Math.atan2(bowH - sternH, 30) * oceanBlend;
+        targetRoll = Math.atan2(portH - starH, 9) * oceanBlend;
+        const steerLean = this.isShipMounted ? -this.shipSpeed * 0.006 : 0;
+        targetRoll += steerLean;
+        heaveSpeed = this.weather === 'stormy' ? 7.5 : 4.0;
+        rotSpeed = this.weather === 'stormy' ? 8.0 : 4.5;
+      }
+
       this.shipGroup.position.y = THREE.MathUtils.lerp(this.shipGroup.position.y, targetY, delta * heaveSpeed);
-
-      // Pitch angle (bow vs stern over 30m hull length)
-      const targetPitch = Math.atan2(bowH - sternH, 30);
-      // Roll angle (port vs starboard over 9m beam)
-      const targetRoll = Math.atan2(portH - starH, 9);
-      // Turn lean
-      const steerLean = this.isShipMounted ? -this.shipSpeed * 0.006 : 0;
-
-      const rotSpeed = this.weather === 'stormy' ? 8.0 : 4.5;
       this.shipGroup.rotation.x = THREE.MathUtils.lerp(this.shipGroup.rotation.x, targetPitch, delta * rotSpeed);
-      this.shipGroup.rotation.z = THREE.MathUtils.lerp(this.shipGroup.rotation.z, targetRoll + steerLean, delta * rotSpeed);
+      this.shipGroup.rotation.z = THREE.MathUtils.lerp(this.shipGroup.rotation.z, targetRoll, delta * rotSpeed);
 
       // Spawn sea spray at dragon prow when sailing in rough stormy sea or moving at speed
       if (this.weather === 'stormy' || Math.abs(this.shipSpeed) > 5) {

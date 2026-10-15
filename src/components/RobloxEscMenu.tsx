@@ -14,6 +14,7 @@ import {
   Shield,
   Check,
   AlertTriangle,
+  Sparkles,
 } from 'lucide-react';
 import { sound } from '../audio/soundEngine';
 
@@ -33,6 +34,7 @@ interface RobloxEscMenuProps {
   showPerfStats: boolean;
   onTogglePerfStats: () => void;
   currentCheckpointName: string;
+  onOpenHowToPlay?: () => void;
 }
 
 export const RobloxEscMenu: React.FC<RobloxEscMenuProps> = ({
@@ -51,6 +53,7 @@ export const RobloxEscMenu: React.FC<RobloxEscMenuProps> = ({
   showPerfStats,
   onTogglePerfStats,
   currentCheckpointName,
+  onOpenHowToPlay,
 }) => {
   const [activeTab, setActiveTab] = useState<'game' | 'settings' | 'help'>('game');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -355,6 +358,19 @@ export const RobloxEscMenu: React.FC<RobloxEscMenuProps> = ({
           {/* TAB 3: HELP & CONTROLS */}
           {activeTab === 'help' && (
             <div className="space-y-3 text-xs max-h-64 overflow-y-auto pr-1">
+              {onOpenHowToPlay && (
+                <button
+                  onClick={() => {
+                    onClose();
+                    onOpenHowToPlay();
+                  }}
+                  className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs flex items-center justify-center gap-2 transition cursor-pointer shadow-md"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  ✨ Where to Find All Features &amp; Realm Guide
+                </button>
+              )}
+
               <div className="p-3 bg-[#23262a] rounded-xl border border-neutral-800 space-y-1.5">
                 <div className="font-bold text-amber-400">Movement & Combat</div>
                 <div className="grid grid-cols-2 gap-1 text-[11px] text-neutral-300">
