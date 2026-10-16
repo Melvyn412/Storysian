@@ -786,9 +786,13 @@ export const HowToPlayModal: React.FC<HowToPlayModalProps> = ({
                     </div>
                   </div>
                   <p className="text-xs text-neutral-300">
-                    Click &amp; drag anywhere to orbit the 360° camera. Use the{' '}
-                    <span className="text-white font-semibold">Scroll Wheel</span> to zoom in/out or press{' '}
-                    <span className="text-amber-300 font-semibold">[C]</span> for 1st-Person View.
+                    Click &amp; drag to orbit the 360° camera. Use the{' '}
+                    <span className="text-white font-semibold">Mouse Scroll Wheel</span>,{' '}
+                    <span className="text-amber-300 font-semibold">[ / ] Keys</span>,{' '}
+                    <span className="text-amber-300 font-semibold">- / + Keys</span>, or on-screen{' '}
+                    <span className="text-sky-300 font-semibold">(+) / (-)</span> buttons to zoom freely between{' '}
+                    <span className="text-sky-400 font-semibold">1st-Person Viking Eye View (2.4m)</span> and wide tactical orbit (35m). Press{' '}
+                    <span className="text-amber-300 font-semibold">[C]</span> to cycle presets.
                   </p>
                 </div>
 

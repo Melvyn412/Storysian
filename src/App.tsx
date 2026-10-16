@@ -2560,6 +2560,18 @@ export default function App() {
         setCameraMode(nextMode);
       }
 
+      // Camera Zoom In / Out Shortcuts [ [ / ] or - / = or Numpad -/+ ]
+      if (code === 'BracketLeft' || code === 'Minus' || code === 'NumpadSubtract') {
+        const dist = player.zoomIn(2.0);
+        setCameraMode(player.cameraMode);
+        addFloatingNumberRef.current(`🔍 Zoom In (${Math.round(dist)}m)`, '#38bdf8');
+      }
+      if (code === 'BracketRight' || code === 'Equal' || code === 'NumpadAdd') {
+        const dist = player.zoomOut(2.0);
+        setCameraMode(player.cameraMode);
+        addFloatingNumberRef.current(`🔍 Zoom Out (${Math.round(dist)}m)`, '#38bdf8');
+      }
+
       // Classic Roblox Esc Menu & Backpack keys
       if (code === 'Escape') {
         setShowEscMenu((prev) => !prev);
@@ -2775,7 +2787,18 @@ export default function App() {
     };
 
     const handleWheel = (e: WheelEvent) => {
-      player.cameraDistance = Math.max(2.5, Math.min(30, player.cameraDistance + e.deltaY * 0.02));
+      // Don't intercept zoom when scrolling inside scrollable modal bodies, inputs, or chat
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('.overflow-y-auto, .overflow-auto, input, select, textarea')) return;
+
+      e.preventDefault();
+      const zoomStep = Math.min(3.5, Math.max(0.75, Math.abs(e.deltaY) * 0.025));
+      if (e.deltaY > 0) {
+        player.zoomOut(zoomStep);
+      } else if (e.deltaY < 0) {
+        player.zoomIn(zoomStep);
+      }
+      setCameraMode(player.cameraMode);
     };
 
     const handleContextMenu = (e: MouseEvent) => {
@@ -2785,7 +2808,7 @@ export default function App() {
     container.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mouseup', handleMouseUp);
     window.addEventListener('mousemove', handleMouseMove);
-    container.addEventListener('wheel', handleWheel, { passive: true });
+    window.addEventListener('wheel', handleWheel, { passive: false });
     container.addEventListener('contextmenu', handleContextMenu);
 
     // Touch Controls: Camera Look-Around & 2-Finger Pinch Zoom
@@ -2828,7 +2851,8 @@ export default function App() {
         const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
         if (dist > 10) {
           const ratio = initialPinchDist / dist;
-          player.cameraDistance = Math.max(2.5, Math.min(30, initialCameraDist * ratio));
+          player.setZoom(initialCameraDist * ratio);
+          setCameraMode(player.cameraMode);
         }
         return;
       }
@@ -3360,7 +3384,7 @@ export default function App() {
       container.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mouseup', handleMouseUp);
       window.removeEventListener('mousemove', handleMouseMove);
-      container.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('wheel', handleWheel);
       container.removeEventListener('contextmenu', handleContextMenu);
       container.removeEventListener('touchstart', handleTouchStart);
       window.removeEventListener('touchmove', handleTouchMove);
@@ -3752,6 +3776,27 @@ export default function App() {
         }}
         onOpenYoungVikingRealm={() => setShowYoungVikingModal(true)}
         onOpenHowToPlay={() => setShowHowToPlayModal(true)}
+        onZoomIn={() => {
+          if (playerRef.current) {
+            const dist = playerRef.current.zoomIn(2.0);
+            setCameraMode(playerRef.current.cameraMode);
+            addFloatingNumberRef.current(`🔍 Zoom In (${Math.round(dist)}m)`, '#38bdf8');
+          }
+        }}
+        onZoomOut={() => {
+          if (playerRef.current) {
+            const dist = playerRef.current.zoomOut(2.0);
+            setCameraMode(playerRef.current.cameraMode);
+            addFloatingNumberRef.current(`🔍 Zoom Out (${Math.round(dist)}m)`, '#38bdf8');
+          }
+        }}
+        cameraMode={cameraMode}
+        onCycleCameraMode={() => {
+          if (playerRef.current) {
+            const nextMode = playerRef.current.cycleCameraMode();
+            setCameraMode(nextMode);
+          }
+        }}
       />
 
       {/* Active Battle Indicator */}
@@ -4015,6 +4060,20 @@ export default function App() {
           if (playerRef.current) {
             const nextMode = playerRef.current.cycleCameraMode();
             setCameraMode(nextMode);
+          }
+        }}
+        onZoomIn={() => {
+          if (playerRef.current) {
+            const dist = playerRef.current.zoomIn(2.0);
+            setCameraMode(playerRef.current.cameraMode);
+            addFloatingNumberRef.current(`🔍 Zoom In (${Math.round(dist)}m)`, '#38bdf8');
+          }
+        }}
+        onZoomOut={() => {
+          if (playerRef.current) {
+            const dist = playerRef.current.zoomOut(2.0);
+            setCameraMode(playerRef.current.cameraMode);
+            addFloatingNumberRef.current(`🔍 Zoom Out (${Math.round(dist)}m)`, '#38bdf8');
           }
         }}
         cameraMode={cameraMode}

@@ -12,6 +12,8 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ZoomIn,
+  ZoomOut,
 } from 'lucide-react';
 
 interface MobileControlsProps {
@@ -28,6 +30,8 @@ interface MobileControlsProps {
   onLookChange?: (look: { lookUp: boolean; lookDown: boolean; lookLeft: boolean; lookRight: boolean }) => void;
   onCycleCameraMode?: () => void;
   cameraMode?: 'third_person' | 'close_look' | 'first_person';
+  onZoomIn?: () => void;
+  onZoomOut?: () => void;
 }
 
 export const MobileControls: React.FC<MobileControlsProps> = ({
@@ -44,6 +48,8 @@ export const MobileControls: React.FC<MobileControlsProps> = ({
   onLookChange,
   onCycleCameraMode,
   cameraMode = 'third_person',
+  onZoomIn,
+  onZoomOut,
 }) => {
   const joystickBaseRef = useRef<HTMLDivElement>(null);
   const [knobPos, setKnobPos] = useState({ x: 0, y: 0 });
@@ -323,11 +329,47 @@ export const MobileControls: React.FC<MobileControlsProps> = ({
 
       {/* 2. Right Thumb Action Arcade Cluster + Look Up & Around Gimbal */}
       <div className="absolute bottom-6 right-4 sm:bottom-8 sm:right-8 pointer-events-auto flex flex-col items-end gap-2.5 select-none touch-none">
-        {/* Viking Look Up & Around D-Pad (Works with Mouse Hold/Click & Touch) */}
+        {/* Viking Look Up & Around D-Pad + Camera Zoom Buttons */}
         <div className="flex flex-col items-center bg-neutral-950/75 backdrop-blur-md border border-amber-500/40 rounded-2xl p-1.5 shadow-xl">
-          <span className="text-[9px] font-extrabold uppercase tracking-wider text-amber-300/90 mb-1">
-            Look Up & Around
-          </span>
+          <div className="flex items-center justify-between w-full px-1 mb-1 gap-1">
+            <span className="text-[9px] font-extrabold uppercase tracking-wider text-amber-300/90">
+              Camera
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (onZoomIn) onZoomIn();
+                  triggerHaptic(12);
+                }}
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  if (onZoomIn) onZoomIn();
+                  triggerHaptic(12);
+                }}
+                className="w-5 h-5 rounded bg-neutral-800 hover:bg-neutral-700 border border-neutral-600 flex items-center justify-center text-sky-300 active:scale-95 cursor-pointer"
+                title="Zoom In (+ / [ key)"
+              >
+                <ZoomIn className="w-3 h-3" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (onZoomOut) onZoomOut();
+                  triggerHaptic(12);
+                }}
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  if (onZoomOut) onZoomOut();
+                  triggerHaptic(12);
+                }}
+                className="w-5 h-5 rounded bg-neutral-800 hover:bg-neutral-700 border border-neutral-600 flex items-center justify-center text-sky-300 active:scale-95 cursor-pointer"
+                title="Zoom Out (- / ] key)"
+              >
+                <ZoomOut className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
           {/* Look Up Button */}
           <button
             onMouseDown={(e) => {

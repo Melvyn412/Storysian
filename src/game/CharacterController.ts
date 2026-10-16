@@ -1256,13 +1256,50 @@ export class CharacterController {
     this.manualLookTimer = 4.0;
   }
 
+  public zoomIn(amount: number = 2.0): number {
+    this.cameraDistance = Math.max(2.2, this.cameraDistance - amount);
+    if (this.cameraDistance <= 3.2) {
+      this.cameraMode = 'first_person';
+    } else if (this.cameraDistance <= 6.5) {
+      this.cameraMode = 'close_look';
+    } else {
+      this.cameraMode = 'third_person';
+    }
+    return this.cameraDistance;
+  }
+
+  public zoomOut(amount: number = 2.0): number {
+    this.cameraDistance = Math.min(35, this.cameraDistance + amount);
+    if (this.cameraDistance > 6.5) {
+      this.cameraMode = 'third_person';
+    } else if (this.cameraDistance > 3.2) {
+      this.cameraMode = 'close_look';
+    }
+    return this.cameraDistance;
+  }
+
+  public setZoom(distance: number): number {
+    this.cameraDistance = Math.max(2.2, Math.min(35, distance));
+    if (this.cameraDistance <= 3.2) {
+      this.cameraMode = 'first_person';
+    } else if (this.cameraDistance <= 6.5) {
+      this.cameraMode = 'close_look';
+    } else {
+      this.cameraMode = 'third_person';
+    }
+    return this.cameraDistance;
+  }
+
   public cycleCameraMode(): 'third_person' | 'close_look' | 'first_person' {
     if (this.cameraMode === 'third_person') {
       this.cameraMode = 'close_look';
+      this.cameraDistance = 5.5;
     } else if (this.cameraMode === 'close_look') {
       this.cameraMode = 'first_person';
+      this.cameraDistance = 2.4;
     } else {
       this.cameraMode = 'third_person';
+      this.cameraDistance = 11.5;
     }
     return this.cameraMode;
   }

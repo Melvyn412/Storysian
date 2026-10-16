@@ -1,5 +1,5 @@
 import React from 'react';
-import { Crosshair, Zap, Snowflake, Compass, Radio, Skull, TreePine, HelpCircle } from 'lucide-react';
+import { Crosshair, Zap, Snowflake, Compass, Radio, Skull, TreePine, HelpCircle, Eye, ZoomIn, ZoomOut } from 'lucide-react';
 import { WEAPON_SKILLS } from '../game/robloxFeaturesConfig';
 
 interface RadarBlip {
@@ -22,6 +22,10 @@ interface RadarMinimapHUDProps {
   onEnterNiflheimDungeon?: () => void;
   onOpenYoungVikingRealm?: () => void;
   onOpenHowToPlay?: () => void;
+  onZoomIn?: () => void;
+  onZoomOut?: () => void;
+  cameraMode?: 'third_person' | 'close_look' | 'first_person';
+  onCycleCameraMode?: () => void;
 }
 
 export const RadarMinimapHUD: React.FC<RadarMinimapHUDProps> = ({
@@ -37,6 +41,10 @@ export const RadarMinimapHUD: React.FC<RadarMinimapHUDProps> = ({
   onEnterNiflheimDungeon,
   onOpenYoungVikingRealm,
   onOpenHowToPlay,
+  onZoomIn,
+  onZoomOut,
+  cameraMode = 'third_person',
+  onCycleCameraMode,
 }) => {
   const RADAR_RANGE = 140;
   const RADAR_RADIUS_PX = 46;
@@ -108,6 +116,41 @@ export const RadarMinimapHUD: React.FC<RadarMinimapHUDProps> = ({
           <Crosshair className="w-3.5 h-3.5" />
           <span>{isShiftLocked ? 'Shift-Lock: ON' : 'Shift-Lock: OFF'}</span>
         </button>
+
+        {/* Camera Zoom & Preset View Controls */}
+        <div className="flex items-center gap-1.5 bg-neutral-950/90 border border-neutral-700/80 rounded-lg px-2 py-1 shadow-lg">
+          <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mr-0.5">Zoom</span>
+          <button
+            onClick={onZoomIn}
+            className="w-6 h-6 rounded bg-neutral-800 hover:bg-neutral-700 border border-neutral-600 text-sky-300 font-extrabold text-xs flex items-center justify-center transition active:scale-95 cursor-pointer"
+            title="Zoom Camera In (Mouse Scroll Up, [ key, or - key)"
+          >
+            <ZoomIn className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={onZoomOut}
+            className="w-6 h-6 rounded bg-neutral-800 hover:bg-neutral-700 border border-neutral-600 text-sky-300 font-extrabold text-xs flex items-center justify-center transition active:scale-95 cursor-pointer"
+            title="Zoom Camera Out (Mouse Scroll Down, ] key, or + key)"
+          >
+            <ZoomOut className="w-3.5 h-3.5" />
+          </button>
+          {onCycleCameraMode && (
+            <button
+              onClick={onCycleCameraMode}
+              className={`px-2 h-6 rounded border text-[9px] font-black uppercase flex items-center gap-1 transition active:scale-95 cursor-pointer ${
+                cameraMode === 'first_person'
+                  ? 'bg-sky-500 border-sky-300 text-neutral-950 shadow-[0_0_8px_rgba(56,189,248,0.6)]'
+                  : cameraMode === 'close_look'
+                  ? 'bg-amber-500 border-amber-300 text-neutral-950'
+                  : 'bg-neutral-800 border-neutral-600 text-amber-300 hover:bg-neutral-700'
+              }`}
+              title="Cycle Camera View Mode [C]"
+            >
+              <Eye className="w-2.5 h-2.5" />
+              <span>{cameraMode === 'first_person' ? '1ST' : cameraMode === 'close_look' ? 'CLOSE' : '3RD'}</span>
+            </button>
+          )}
+        </div>
 
         {/* Radial Tactical War-Command Wheel [T] */}
         {onOpenTacticalWheel && (
