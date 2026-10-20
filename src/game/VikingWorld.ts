@@ -22,7 +22,7 @@ export interface DestructibleBarricade {
 
 export interface InteractiveObject {
   id: string;
-  type: 'tree' | 'ore' | 'ship_helm' | 'runestone' | 'chest' | 'fire' | 'obby_chest' | 'territory_flag' | 'tycoon_pad';
+  type: 'tree' | 'ore' | 'ship_helm' | 'runestone' | 'chest' | 'fire' | 'obby_chest' | 'territory_flag' | 'tycoon_pad' | 'pet_trading_post';
   mesh: THREE.Object3D;
   position: THREE.Vector3;
   health: number;
@@ -239,6 +239,7 @@ export class VikingWorld {
     this.buildMeadHallFeastTable();
     this.buildSkyObbyCourse();
     this.buildTycoonPlot();
+    this.buildPetTradingPost();
     this.buildSnowParticles();
     this.buildMistParticles();
     this.buildRainParticles();
@@ -825,9 +826,9 @@ export class VikingWorld {
     this.scene.add(embarkBoardwalk);
 
     // Wooden Boarding Gangway connecting Dock Boardwalk to Drakkar Deck Entrance
-    const gangwayPlank = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.35, 5.0), pierPlankMat);
-    gangwayPlank.position.set(18.2, 1.45, 85);
-    gangwayPlank.rotation.z = -0.06;
+    const gangwayPlank = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.35, 4.0), pierPlankMat);
+    gangwayPlank.position.set(18.2, 2.5, 85);
+    gangwayPlank.rotation.z = -0.42;
     gangwayPlank.castShadow = true;
     gangwayPlank.receiveShadow = true;
     this.scene.add(gangwayPlank);
@@ -878,20 +879,17 @@ export class VikingWorld {
       }
     });
 
-    // Register solid, non-conflicting dock walkways into obbyPlatforms for collision detection
+    // Register solid, uniform dock walkways into obbyPlatforms for collision detection
+    // All pier surfaces share identical y = 1.35 (surface 1.59) to prevent any vertical stepping or jumping
     this.obbyPlatforms.push(
-      // Shore entry ramp from village grass plateau down to dock surface
-      { x: 0, y: 1.95, z: 52, halfW: 7.2, halfD: 9.2 },
-      // Main central pier
-      { x: 0, y: 1.35, z: 75, halfW: 7.2, halfD: 21.5 },
-      // Cross pier connecting to Drakkar berth
-      { x: 7, y: 1.35, z: 83, halfW: 7.2, halfD: 6.2 },
-      // Drakkar embarkation boardwalk alongside ship
-      { x: 13.8, y: 1.35, z: 88, halfW: 2.9, halfD: 16.2 },
-      // Boarding gangway connecting dock to Drakkar deck
-      { x: 18.2, y: 1.55, z: 85, halfW: 1.9, halfD: 2.6 },
+      // Main central pier (z: 56 to 96)
+      { x: 0, y: 1.35, z: 76, halfW: 7.2, halfD: 20 },
+      // Cross pier connecting to Drakkar berth (x: 0 to 14, z: 77 to 89)
+      { x: 7, y: 1.35, z: 83, halfW: 7.0, halfD: 6.0 },
+      // Drakkar embarkation boardwalk alongside ship (x: 10.8 to 16.8, z: 72 to 104)
+      { x: 13.8, y: 1.35, z: 88, halfW: 3.0, halfD: 16.0 },
       // Moored Drakkar ship deck platform
-      { x: 22, y: 2.05, z: 95, halfW: 3.2, halfD: 12.8 }
+      { x: 22, y: 3.7, z: 95, halfW: 3.5, halfD: 13.0 }
     );
 
     // Ship Group
@@ -1705,6 +1703,103 @@ export class VikingWorld {
     });
 
     this.updateTycoonStructures(INITIAL_TYCOON_BUILDINGS);
+  }
+
+  /**
+   * Katfjord Pet Trading Post & Beastmaster Menagerie
+   */
+  private buildPetTradingPost() {
+    const postGroup = new THREE.Group();
+    postGroup.position.set(-12, 3, 22);
+
+    // Sturdy timber deck floor
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0x452b18, roughness: 0.85 });
+    const floor = new THREE.Mesh(new THREE.BoxGeometry(10, 0.4, 8), floorMat);
+    floor.position.set(0, 0.2, 0);
+    floor.receiveShadow = true;
+    postGroup.add(floor);
+
+    // 4 Corner Timber Pillars
+    const logMat = new THREE.MeshStandardMaterial({ color: 0x2e1d10, roughness: 0.9 });
+    const logGeo = new THREE.CylinderGeometry(0.35, 0.4, 5.5, 6);
+    [
+      [-4.5, -3.5],
+      [4.5, -3.5],
+      [-4.5, 3.5],
+      [4.5, 3.5],
+    ].forEach(([cx, cz]) => {
+      const col = new THREE.Mesh(logGeo, logMat);
+      col.position.set(cx, 2.75, cz);
+      col.castShadow = true;
+      postGroup.add(col);
+    });
+
+    // Trader counter desk
+    const counterMat = new THREE.MeshStandardMaterial({ color: 0x5c3a21, roughness: 0.75 });
+    const counter = new THREE.Mesh(new THREE.BoxGeometry(6, 1.8, 1.4), counterMat);
+    counter.position.set(0, 0.9, 1.8);
+    counter.castShadow = true;
+    postGroup.add(counter);
+
+    // Striped Norse Merchant Wool Canopy (Red & Golden Amber)
+    const canopyMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.8 });
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(7, 2.5, 4), canopyMat);
+    roof.position.set(0, 6.2, 0);
+    roof.rotation.y = Math.PI / 4;
+    roof.castShadow = true;
+    postGroup.add(roof);
+
+    // Hanging Runic Beast Lantern
+    const lanternMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b });
+    const lantern = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.0, 0.8), lanternMat);
+    lantern.position.set(0, 4.2, 1.8);
+    postGroup.add(lantern);
+
+    const postLight = new THREE.PointLight(0xf59e0b, 2.0, 16);
+    postLight.position.set(0, 4.2, 1.8);
+    postGroup.add(postLight);
+
+    // Wooden Beast Signboard with Carved Paw/Wing Rune
+    const signMat = new THREE.MeshStandardMaterial({ color: 0x1f2937 });
+    const sign = new THREE.Mesh(new THREE.BoxGeometry(4.2, 1.2, 0.3), signMat);
+    sign.position.set(0, 4.8, 3.6);
+    postGroup.add(sign);
+
+    const runeSignGlow = new THREE.Mesh(
+      new THREE.BoxGeometry(3.6, 0.6, 0.1),
+      new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
+    );
+    runeSignGlow.position.set(0, 4.8, 3.8);
+    postGroup.add(runeSignGlow);
+
+    // Companion Perch with Miniature Runic Mascot
+    const perch = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 2.2, 6), logMat);
+    perch.position.set(-2.8, 1.1, 1.8);
+    postGroup.add(perch);
+
+    const crossBar = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.15, 0.15), logMat);
+    crossBar.position.set(-2.8, 2.2, 1.8);
+    postGroup.add(crossBar);
+
+    const mascot = new THREE.Mesh(
+      new THREE.BoxGeometry(0.6, 0.6, 0.7),
+      new THREE.MeshStandardMaterial({ color: 0x38bdf8 })
+    );
+    mascot.position.set(-2.8, 2.6, 1.8);
+    postGroup.add(mascot);
+
+    this.scene.add(postGroup);
+
+    this.interactiveObjects.push({
+      id: 'pet_trading_post',
+      type: 'pet_trading_post',
+      mesh: counter,
+      position: new THREE.Vector3(-12, 3.2, 22),
+      health: 999,
+      maxHealth: 999,
+      name: 'Katfjord Pet Trading Post',
+      interactionPrompt: 'Press E to Open Pet Trading & Barter Hall',
+    });
   }
 
   public updateTycoonStructures(buildings: TycoonBuilding[]) {

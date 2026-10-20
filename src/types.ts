@@ -282,7 +282,19 @@ export interface SagaPassTier {
   claimedGold: boolean;
 }
 
-export type PetId = 'pet_odin_raven' | 'pet_fenrir_pup' | 'pet_frost_dragon' | 'pet_golden_boar';
+export type PetId =
+  | 'pet_odin_raven'
+  | 'pet_fenrir_pup'
+  | 'pet_frost_dragon'
+  | 'pet_golden_boar'
+  | 'pet_ratatoskr'
+  | 'pet_jormungandr_serpent'
+  | 'pet_freya_cat'
+  | 'pet_surtr_flame_drake'
+  | 'pet_garmr_hound'
+  | 'pet_vedrfolnir_hawk'
+  | 'pet_skoll_wolf'
+  | 'pet_tanngrisnir_goat';
 
 export interface VikingPet {
   id: PetId;
@@ -299,7 +311,15 @@ export interface VikingPet {
   count: number;
 }
 
-export type MountId = 'mount_war_bear' | 'mount_dire_wolf' | 'mount_sleipnir' | 'mount_frost_drake';
+export type MountId =
+  | 'mount_war_bear'
+  | 'mount_dire_wolf'
+  | 'mount_sleipnir'
+  | 'mount_frost_drake'
+  | 'mount_tanngrisnir_goat'
+  | 'mount_eikthyrnir_elk'
+  | 'mount_fenrir_alpha'
+  | 'mount_valkyrie_pegasus';
 
 export interface VikingMount {
   id: MountId;
@@ -381,9 +401,44 @@ export interface RemotePlayerState {
   isBlocking: boolean;
   isSailing: boolean;
   mountId: string | null;
+  activePetId?: PetId | null;
+  unlockedPets?: PetId[];
   emote: string | null;
   speechText: string | null;
   lastUpdated: number;
+}
+
+export interface ActivePetTradeSession {
+  tradeId: string;
+  senderId: string;
+  senderName: string;
+  senderClan: string;
+  receiverId: string;
+  receiverName: string;
+  receiverClan: string;
+  senderPets: PetId[];
+  senderSilver: number;
+  receiverPets: PetId[];
+  receiverSilver: number;
+  senderAccepted: boolean;
+  receiverAccepted: boolean;
+  senderLocked: boolean;
+  receiverLocked: boolean;
+  status: 'pending' | 'accepted' | 'completed' | 'cancelled';
+  createdAt: number;
+}
+
+export interface PublicPetTradeListing {
+  id: string;
+  creatorId: string;
+  creatorName: string;
+  creatorClan: string;
+  offeredPetId: PetId;
+  offeredSilver: number;
+  wantedPetId: PetId;
+  wantedSilver: number;
+  createdAt: number;
+  completed: boolean;
 }
 
 export interface SharedWorldBoss {

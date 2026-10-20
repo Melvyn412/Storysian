@@ -83,6 +83,8 @@ interface MultiplayerPlayerState {
   isBlocking: boolean;
   isSailing: boolean;
   mountId: string | null;
+  activePetId?: string | null;
+  unlockedPets?: string[];
   emote: string | null;
   speechText: string | null;
   lastUpdated: number;
@@ -160,6 +162,19 @@ interface RoomState {
     capturedAt: string;
   };
   supplyDrop: SupplyDropState;
+  petTradeSessions: Map<string, any>;
+  publicPetListings: Array<{
+    id: string;
+    creatorId: string;
+    creatorName: string;
+    creatorClan: string;
+    offeredPetId: string;
+    offeredSilver: number;
+    wantedPetId: string;
+    wantedSilver: number;
+    createdAt: number;
+    completed: boolean;
+  }>;
 }
 
 const rooms = new Map<string, RoomState>();
@@ -234,6 +249,57 @@ function getOrCreateRoom(roomId: string): RoomState {
         claimedBy: null,
         spawnedAt: Date.now(),
       },
+      petTradeSessions: new Map(),
+      publicPetListings: [
+        {
+          id: 'listing_ragnar_boar',
+          creatorId: 'trader_ragnar',
+          creatorName: 'Ragnar_Lothbrok',
+          creatorClan: 'Katfjord Clan',
+          offeredPetId: 'pet_golden_boar',
+          offeredSilver: 100,
+          wantedPetId: 'pet_fenrir_pup',
+          wantedSilver: 0,
+          createdAt: Date.now() - 3600000,
+          completed: false,
+        },
+        {
+          id: 'listing_lagertha_cat',
+          creatorId: 'trader_lagertha',
+          creatorName: 'Lagertha_Shieldmaiden',
+          creatorClan: 'Valkyrie Clan',
+          offeredPetId: 'pet_freya_cat',
+          offeredSilver: 50,
+          wantedPetId: 'pet_skoll_wolf',
+          wantedSilver: 0,
+          createdAt: Date.now() - 7200000,
+          completed: false,
+        },
+        {
+          id: 'listing_floki_squirrel',
+          creatorId: 'trader_floki',
+          creatorName: 'Floki_Shipbuilder',
+          creatorClan: 'Raven Clan',
+          offeredPetId: 'pet_ratatoskr',
+          offeredSilver: 0,
+          wantedPetId: 'pet_odin_raven',
+          wantedSilver: 0,
+          createdAt: Date.now() - 1800000,
+          completed: false,
+        },
+        {
+          id: 'listing_bjorn_hawk',
+          creatorId: 'trader_bjorn',
+          creatorName: 'Bjorn_Ironside',
+          creatorClan: 'Ironside Clan',
+          offeredPetId: 'pet_vedrfolnir_hawk',
+          offeredSilver: 150,
+          wantedPetId: 'pet_garmr_hound',
+          wantedSilver: 0,
+          createdAt: Date.now() - 900000,
+          completed: false,
+        },
+      ],
     };
     rooms.set(cleanId, room);
   }
@@ -474,6 +540,8 @@ async function startServer() {
             isBlocking: false,
             isSailing: Boolean(pData.isSailing),
             mountId: pData.mountId ? String(pData.mountId) : null,
+            activePetId: pData.activePetId ? String(pData.activePetId) : null,
+            unlockedPets: Array.isArray(pData.unlockedPets) ? pData.unlockedPets : [],
             emote: null,
             speechText: null,
             lastUpdated: Date.now(),
@@ -496,6 +564,7 @@ async function startServer() {
               activePings: currentRoom.activePings.filter((p) => Date.now() - p.createdAt < 14000),
               territoryHolder: currentRoom.territoryHolder,
               supplyDrop: currentRoom.supplyDrop,
+              publicPetListings: currentRoom.publicPetListings,
             })
           );
 
@@ -536,6 +605,8 @@ async function startServer() {
           if (typeof msg.isBlocking === 'boolean') existing.isBlocking = msg.isBlocking;
           if (typeof msg.isSailing === 'boolean') existing.isSailing = msg.isSailing;
           if (msg.mountId !== undefined) existing.mountId = msg.mountId;
+          if (msg.activePetId !== undefined) existing.activePetId = msg.activePetId;
+          if (Array.isArray(msg.unlockedPets)) existing.unlockedPets = msg.unlockedPets;
           if (msg.emote !== undefined) existing.emote = msg.emote;
           existing.lastUpdated = Date.now();
 
@@ -989,6 +1060,172 @@ async function startServer() {
             ping: pingEvent,
             message: sysMsg,
           });
+          return;
+        }
+
+        // 12. Direct Real-Time Player-to-Player Pet Trading
+        if (type === 'pet:trade_request') {
+          const targetPlayerId = String(msg.targetPlayerId || '');
+          const targetWs = currentRoom.sockets.get(targetPlayerId);
+          const sender = currentRoom.players.get(currentPlayerId);
+          const target = currentRoom.players.get(targetPlayerId);
+
+          if (!targetWs || !sender || !target) {
+            ws.send(JSON.stringify({ type: 'pet:trade_error', error: 'Trader is not currently online in this realm.' }));
+            return;
+          }
+
+          const tradeId = `trade_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+          const session = {
+            tradeId,
+            senderId: currentPlayerId,
+            senderName: sender.name,
+            senderClan: sender.clan,
+            receiverId: targetPlayerId,
+            receiverName: target.name,
+            receiverClan: target.clan,
+            senderPets: [],
+            senderSilver: 0,
+            receiverPets: [],
+            receiverSilver: 0,
+            senderAccepted: false,
+            receiverAccepted: false,
+            senderLocked: false,
+            receiverLocked: false,
+            status: 'pending',
+            createdAt: Date.now(),
+          };
+
+          currentRoom.petTradeSessions.set(tradeId, session);
+
+          ws.send(JSON.stringify({ type: 'pet:trade_started', session }));
+          targetWs.send(JSON.stringify({ type: 'pet:trade_invite', session }));
+          return;
+        }
+
+        if (type === 'pet:trade_update') {
+          const tradeId = String(msg.tradeId || '');
+          const session = currentRoom.petTradeSessions.get(tradeId);
+          if (!session || session.status !== 'pending') return;
+
+          const isSender = session.senderId === currentPlayerId;
+          const isReceiver = session.receiverId === currentPlayerId;
+          if (!isSender && !isReceiver) return;
+
+          if (isSender) {
+            if (Array.isArray(msg.pets)) session.senderPets = msg.pets;
+            if (typeof msg.silver === 'number') session.senderSilver = Math.max(0, msg.silver);
+            if (typeof msg.locked === 'boolean') session.senderLocked = msg.locked;
+            if (typeof msg.accepted === 'boolean') session.senderAccepted = msg.accepted;
+          } else {
+            if (Array.isArray(msg.pets)) session.receiverPets = msg.pets;
+            if (typeof msg.silver === 'number') session.receiverSilver = Math.max(0, msg.silver);
+            if (typeof msg.locked === 'boolean') session.receiverLocked = msg.locked;
+            if (typeof msg.accepted === 'boolean') session.receiverAccepted = msg.accepted;
+          }
+
+          if (msg.pets !== undefined || msg.silver !== undefined) {
+            session.senderAccepted = false;
+            session.receiverAccepted = false;
+          }
+
+          const senderWs = currentRoom.sockets.get(session.senderId);
+          const receiverWs = currentRoom.sockets.get(session.receiverId);
+          const syncPayload = JSON.stringify({ type: 'pet:trade_sync', session });
+          if (senderWs && senderWs.readyState === WebSocket.OPEN) senderWs.send(syncPayload);
+          if (receiverWs && receiverWs.readyState === WebSocket.OPEN) receiverWs.send(syncPayload);
+
+          if (session.senderAccepted && session.receiverAccepted) {
+            session.status = 'completed';
+            const completePayload = JSON.stringify({ type: 'pet:trade_completed', session });
+            if (senderWs && senderWs.readyState === WebSocket.OPEN) senderWs.send(completePayload);
+            if (receiverWs && receiverWs.readyState === WebSocket.OPEN) receiverWs.send(completePayload);
+
+            const sysMsg = {
+              id: `trade_${Date.now()}`,
+              sender: 'Katfjord Beastmaster',
+              clan: 'Realm Herald',
+              text: `🤝 ${session.senderName} & ${session.receiverName} successfully completed a Norse Pet Trade!`,
+              isSystem: true,
+              time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            };
+            currentRoom.chatHistory.push(sysMsg);
+            broadcastToRoom(currentRoom, { type: 'chat:message', message: sysMsg });
+          }
+          return;
+        }
+
+        if (type === 'pet:trade_cancel') {
+          const tradeId = String(msg.tradeId || '');
+          const session = currentRoom.petTradeSessions.get(tradeId);
+          if (session) {
+            session.status = 'cancelled';
+            const cancelPayload = JSON.stringify({
+              type: 'pet:trade_cancelled',
+              tradeId,
+              cancelledByName: msg.playerName || 'Trader',
+            });
+            const senderWs = currentRoom.sockets.get(session.senderId);
+            const receiverWs = currentRoom.sockets.get(session.receiverId);
+            if (senderWs && senderWs.readyState === WebSocket.OPEN) senderWs.send(cancelPayload);
+            if (receiverWs && receiverWs.readyState === WebSocket.OPEN) receiverWs.send(cancelPayload);
+            currentRoom.petTradeSessions.delete(tradeId);
+          }
+          return;
+        }
+
+        // 13. Public Pet Barter Board Listings
+        if (type === 'pet:post_listing') {
+          const sender = currentRoom.players.get(currentPlayerId);
+          const newListing = {
+            id: `listing_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+            creatorId: currentPlayerId,
+            creatorName: sender ? sender.name : String(msg.creatorName || 'Warrior'),
+            creatorClan: sender ? sender.clan : String(msg.creatorClan || 'Katfjord Clan'),
+            offeredPetId: String(msg.offeredPetId || 'pet_odin_raven'),
+            offeredSilver: Number(msg.offeredSilver) || 0,
+            wantedPetId: String(msg.wantedPetId || 'pet_fenrir_pup'),
+            wantedSilver: Number(msg.wantedSilver) || 0,
+            createdAt: Date.now(),
+            completed: false,
+          };
+          currentRoom.publicPetListings.unshift(newListing);
+          if (currentRoom.publicPetListings.length > 20) currentRoom.publicPetListings.pop();
+
+          broadcastToRoom(currentRoom, {
+            type: 'pet:new_listing',
+            listing: newListing,
+          });
+          return;
+        }
+
+        if (type === 'pet:claim_listing') {
+          const listingId = String(msg.listingId || '');
+          const listing = currentRoom.publicPetListings.find((l) => l.id === listingId);
+          const claimer = currentRoom.players.get(currentPlayerId);
+          if (listing && !listing.completed) {
+            listing.completed = true;
+            broadcastToRoom(currentRoom, {
+              type: 'pet:listing_claimed',
+              listingId,
+              claimerId: currentPlayerId,
+              claimerName: claimer ? claimer.name : 'Viking Trader',
+              offeredPetId: listing.offeredPetId,
+              wantedPetId: listing.wantedPetId,
+              offeredSilver: listing.offeredSilver,
+              wantedSilver: listing.wantedSilver,
+            });
+
+            const sysMsg = {
+              id: `claim_${Date.now()}`,
+              sender: 'Trading Post',
+              text: `📜 ${claimer ? claimer.name : 'A Viking'} fulfilled ${listing.creatorName}'s Pet Trade Listing!`,
+              isSystem: true,
+              time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            };
+            currentRoom.chatHistory.push(sysMsg);
+            broadcastToRoom(currentRoom, { type: 'chat:message', message: sysMsg });
+          }
           return;
         }
       } catch {

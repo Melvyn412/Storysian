@@ -31,6 +31,7 @@ import {
   Target,
   Skull,
   Ship,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { WeatherCondition } from '../types';
 import { sound } from '../audio/soundEngine';
@@ -62,6 +63,8 @@ interface RobloxTopBarProps {
   onToggleGamepasses?: () => void;
   showPets?: boolean;
   onTogglePets?: () => void;
+  showPetTrading?: boolean;
+  onTogglePetTrading?: () => void;
   showTycoon?: boolean;
   onToggleTycoon?: () => void;
   showClanHub?: boolean;
@@ -115,6 +118,8 @@ export const RobloxTopBar: React.FC<RobloxTopBarProps> = ({
   onToggleGamepasses,
   showPets,
   onTogglePets,
+  showPetTrading,
+  onTogglePetTrading,
   showTycoon,
   onToggleTycoon,
   showClanHub,
@@ -375,6 +380,22 @@ export const RobloxTopBar: React.FC<RobloxTopBarProps> = ({
             >
               <Sparkles className="w-3.5 h-3.5 text-sky-400" />
               <span className="hidden lg:inline">Pets</span>
+            </button>
+          )}
+
+          {/* Pet Trading Post & Barter Hall Button */}
+          {onTogglePetTrading && (
+            <button
+              onClick={onTogglePetTrading}
+              className={`hidden md:flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded transition text-xs font-bold shrink-0 cursor-pointer ${
+                showPetTrading
+                  ? 'bg-amber-500 text-neutral-950 shadow-md ring-1 ring-amber-300'
+                  : 'bg-neutral-800 hover:bg-neutral-700 text-amber-300 border border-amber-500/40'
+              }`}
+              title="Katfjord Pet Trading Post & Player Barter Hall"
+            >
+              <ArrowLeftRight className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden xl:inline">Pet Trade</span>
             </button>
           )}
 
@@ -756,6 +777,19 @@ export const RobloxTopBar: React.FC<RobloxTopBarProps> = ({
               >
                 <Sparkles className="w-4 h-4 text-sky-400 shrink-0" />
                 <span>Pets & Mounts</span>
+              </button>
+            )}
+
+            {onTogglePetTrading && (
+              <button
+                onClick={() => {
+                  onTogglePetTrading();
+                  setShowMobileMenu(false);
+                }}
+                className="flex items-center gap-2 p-2 bg-amber-950/70 hover:bg-amber-900 rounded-xl border border-amber-500/40 text-left text-xs font-medium text-amber-200"
+              >
+                <ArrowLeftRight className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>Pet Trade Post</span>
               </button>
             )}
 

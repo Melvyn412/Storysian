@@ -1065,12 +1065,20 @@ export class CharacterController {
       pet_fenrir_pup: { body: 0x64748b, accent: 0xf43f5e },
       pet_golden_boar: { body: 0xfacc15, accent: 0xfef08a },
       pet_frost_dragon: { body: 0x0284c7, accent: 0x7dd3fc },
+      pet_ratatoskr: { body: 0xb45309, accent: 0xfde047 },
+      pet_jormungandr_serpent: { body: 0x047857, accent: 0x34d399 },
+      pet_freya_cat: { body: 0x9333ea, accent: 0xf472b6 },
+      pet_surtr_flame_drake: { body: 0xb91c1c, accent: 0xf97316 },
+      pet_garmr_hound: { body: 0x0f172a, accent: 0xef4444 },
+      pet_vedrfolnir_hawk: { body: 0xd97706, accent: 0xfef08a },
+      pet_skoll_wolf: { body: 0xea580c, accent: 0xfde047 },
+      pet_tanngrisnir_goat: { body: 0xca8a04, accent: 0x38bdf8 },
     };
 
     const colors = colorMap[petId] || colorMap.pet_odin_raven;
     const bodyMat = new THREE.MeshStandardMaterial({
       color: colors.body,
-      metalness: petId === 'pet_golden_boar' ? 0.85 : 0.3,
+      metalness: petId === 'pet_golden_boar' || petId === 'pet_vedrfolnir_hawk' ? 0.85 : 0.3,
       roughness: 0.35,
     });
     const accentMat = new THREE.MeshBasicMaterial({ color: colors.accent });
@@ -1091,15 +1099,37 @@ export class CharacterController {
       this.petGroup.add(eye);
     });
 
-    // Wings for Raven & Frost Dragon, or Ears/Tusks for Wolf/Boar
-    if (petId === 'pet_odin_raven' || petId === 'pet_frost_dragon') {
+    // Wings for flying winged Norse beasts (Ravens, Dragons, Hawks)
+    const isWinged =
+      petId === 'pet_odin_raven' ||
+      petId === 'pet_frost_dragon' ||
+      petId === 'pet_surtr_flame_drake' ||
+      petId === 'pet_vedrfolnir_hawk';
+
+    if (isWinged) {
       [-0.75, 0.75].forEach((wx) => {
         const wing = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.15, 0.9), accentMat);
         wing.position.set(wx, 0.2, 0);
         wing.rotation.z = wx * 0.25;
         this.petGroup.add(wing);
       });
+    } else if (petId === 'pet_tanngrisnir_goat') {
+      // Thor's curved thunder horns
+      [-0.28, 0.28].forEach((hx) => {
+        const horn = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.65, 4), accentMat);
+        horn.position.set(hx, 1.05, 0.45);
+        horn.rotation.x = -Math.PI / 6;
+        horn.rotation.z = hx * -0.3;
+        this.petGroup.add(horn);
+      });
+    } else if (petId === 'pet_jormungandr_serpent') {
+      // Coiled serpent tail crest
+      const serpentCrest = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.4, 1.4), accentMat);
+      serpentCrest.position.set(0, 0.2, -1.1);
+      serpentCrest.rotation.x = -Math.PI / 8;
+      this.petGroup.add(serpentCrest);
     } else {
+      // Sturdy upright wolf/cat/boar ears
       [-0.25, 0.25].forEach((ex) => {
         const ear = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.45, 4), accentMat);
         ear.position.set(ex, 0.95, 0.55);
@@ -1195,6 +1225,10 @@ export class CharacterController {
       mount_war_bear: { fur: 0x78350f, armor: 0xf59e0b },
       mount_dire_wolf: { fur: 0x475569, armor: 0x38bdf8 },
       mount_sleipnir: { fur: 0x1e1b4b, armor: 0xfde047 },
+      mount_tanngrisnir_goat: { fur: 0xd97706, armor: 0xfef08a },
+      mount_eikthyrnir_elk: { fur: 0x065f46, armor: 0x6ee7b7 },
+      mount_fenrir_alpha: { fur: 0x334155, armor: 0xef4444 },
+      mount_valkyrie_pegasus: { fur: 0xf8fafc, armor: 0x38bdf8 },
     };
 
     const c = mountColors[mountId];
@@ -1470,10 +1504,18 @@ export class CharacterController {
     const mountBoost =
       this.activeMountId === 'mount_frost_drake'
         ? 2.3
+        : this.activeMountId === 'mount_valkyrie_pegasus'
+        ? 2.2
+        : this.activeMountId === 'mount_fenrir_alpha'
+        ? 2.15
         : this.activeMountId === 'mount_sleipnir'
         ? 1.95
+        : this.activeMountId === 'mount_eikthyrnir_elk'
+        ? 1.85
         : this.activeMountId === 'mount_dire_wolf'
         ? 1.7
+        : this.activeMountId === 'mount_tanngrisnir_goat'
+        ? 1.6
         : this.activeMountId === 'mount_war_bear'
         ? 1.45
         : 1.0;
@@ -1649,18 +1691,18 @@ export class CharacterController {
       }
     }
 
-    // Ground check: smooth continuous slope from Village Plateau (y=3.0) to Harbor Shore & Docks (y=1.0)
+    // Ground check: smooth continuous slope from Village Plateau (y=3.0) down to Harbor Pier (y=1.35)
     let baseGround = 3.0;
-    if (this.position.z >= 62) {
+    if (this.position.z >= 60) {
       baseGround = 1.0;
     } else if (this.position.z > 38) {
-      const t = (this.position.z - 38) / 24;
+      const t = (this.position.z - 38) / 22;
       const smoothT = t * t * (3 - 2 * t);
-      baseGround = 3.0 - smoothT * 2.0;
+      baseGround = 3.0 - smoothT * 1.65; // Slopes continuously from 3.0 down to exactly 1.35 at dock entrance
     }
     let groundLevel = baseGround + 0.24; // Align feet on top of ground blocks
 
-    // Solid Obby, Pier & Dock Platform Collision (allows walking, jumping, and landing without height jitter)
+    // Solid Obby, Pier & Dock Platform Collision (stable, non-jittering step-up and landing)
     if (obbyPlatforms && obbyPlatforms.length > 0) {
       for (const plat of obbyPlatforms) {
         if (
@@ -1668,9 +1710,15 @@ export class CharacterController {
           Math.abs(this.position.z - plat.z) <= plat.halfD
         ) {
           const platSurface = plat.y + 0.24;
-          // Platform collision: player lands or stands on top if they were above/at surface level
-          const isAboveOrAtSurface = prevY >= platSurface - 0.45 || this.isGrounded;
-          if (isAboveOrAtSurface && platSurface > groundLevel) {
+          // Player can be supported by this platform if:
+          // 1. Landing onto platform from above (prevY was above/at surface and not ascending rapidly)
+          // 2. Smooth step-up (already grounded and platform surface is within a step threshold of <= 0.35m)
+          // 3. Already standing level on this platform
+          const isLandingFromAbove = prevY >= platSurface - 0.35 && this.velocity.y <= 1.0;
+          const isSmoothStepUp = this.isGrounded && Math.abs(this.position.y - platSurface) <= 0.35;
+          const isStandingOnPlatform = Math.abs(this.position.y - platSurface) <= 0.15;
+
+          if ((isLandingFromAbove || isSmoothStepUp || isStandingOnPlatform) && platSurface > groundLevel) {
             groundLevel = platSurface;
           }
         }
@@ -1860,13 +1908,13 @@ export class CharacterController {
       const rawCamY = pivotY + Math.sin(this.cameraPitch) * effectiveDist + shakeOffsetY;
       const rawCamZ = pivotZ + Math.cos(this.cameraYaw) * Math.cos(this.cameraPitch) * effectiveDist;
 
-      // Prevent camera from clipping below terrain/water when tilting up with smooth damping
-      const minCamY = groundLevel + 0.6;
+      // Prevent camera from clipping below water surface / subterranean void with smooth damping
+      const minCamY = Math.max(0.35, this.position.y - 1.5);
       const targetCamY = Math.max(minCamY, rawCamY);
       if (this.smoothedCamY === null) {
         this.smoothedCamY = targetCamY;
       } else {
-        this.smoothedCamY = THREE.MathUtils.lerp(this.smoothedCamY, targetCamY, Math.min(1, 24 * delta));
+        this.smoothedCamY = THREE.MathUtils.lerp(this.smoothedCamY, targetCamY, Math.min(1, 14 * delta));
       }
       const camY = this.smoothedCamY;
 

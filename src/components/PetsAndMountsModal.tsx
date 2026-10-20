@@ -21,6 +21,7 @@ interface PetsAndMountsModalProps {
   onFeedPet?: (petId: PetId) => void;
   mountArmor?: MountArmorPiece[];
   onToggleMountArmor?: (armorId: string) => void;
+  onOpenPetTrading?: () => void;
 }
 
 export const PetsAndMountsModal: React.FC<PetsAndMountsModalProps> = ({
@@ -41,6 +42,7 @@ export const PetsAndMountsModal: React.FC<PetsAndMountsModalProps> = ({
   onFeedPet,
   mountArmor = MOUNT_ARMOR_CATALOG,
   onToggleMountArmor,
+  onOpenPetTrading,
 }) => {
   const [activeTab, setActiveTab] = useState<'pets' | 'evolution' | 'mounts' | 'mount_armor'>('pets');
   const [hatchedMessage, setHatchedMessage] = useState<string | null>(null);
@@ -140,6 +142,20 @@ export const PetsAndMountsModal: React.FC<PetsAndMountsModalProps> = ({
             <Shield className="w-3.5 h-3.5" />
             Mount Armored Barding
           </button>
+
+          {onOpenPetTrading && (
+            <button
+              onClick={() => {
+                onClose();
+                onOpenPetTrading();
+              }}
+              className="px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 shrink-0 bg-amber-500/20 text-amber-300 border border-amber-500/50 hover:bg-amber-500 hover:text-neutral-950 ml-auto shadow-sm"
+              title="Open Katfjord Pet Trading Hall & Barter Post"
+            >
+              <span>🤝</span>
+              Trade Pets with Players
+            </button>
+          )}
         </div>
 
         <div className="p-6 overflow-y-auto space-y-6 flex-1">

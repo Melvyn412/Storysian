@@ -70,6 +70,8 @@ import {
   HolmgangDuelState,
   ActiveFeastBuff,
   FeastBuffType,
+  ActivePetTradeSession,
+  PublicPetTradeListing,
 } from './types';
 import { FishingManager } from './game/FishingManager';
 import { ArcheryManager } from './game/ArcheryManager';
@@ -138,6 +140,7 @@ import { GhostShipHUD } from './components/GhostShipHUD';
 import { MaelstromSalvageHUD } from './components/MaelstromSalvageHUD';
 import { HolmgangDuelModal } from './components/HolmgangDuelModal';
 import { MeadHallFeastModal } from './components/MeadHallFeastModal';
+import { PetTradingModal } from './components/PetTradingModal';
 import { RobloxEscMenu } from './components/RobloxEscMenu';
 import { RobloxOverheadDisplay, OverheadBubble, FloatingDamageNumber } from './components/RobloxOverheadDisplay';
 import { RobloxBackpackModal } from './components/RobloxBackpackModal';
@@ -429,6 +432,10 @@ export default function App() {
   // New Roblox Feature Modals & State
   const [showGamepasses, setShowGamepasses] = useState(false);
   const [showPetsModal, setShowPetsModal] = useState(false);
+  const [showPetTradingModal, setShowPetTradingModal] = useState(false);
+  const [activePetTradeSession, setActivePetTradeSession] = useState<ActivePetTradeSession | null>(null);
+  const [publicPetTradeListings, setPublicPetTradeListings] = useState<PublicPetTradeListing[]>([]);
+  const [incomingTradeNotice, setIncomingTradeNotice] = useState<{ senderName: string; tradeId: string } | null>(null);
   const [showTycoonModal, setShowTycoonModal] = useState(false);
   const [showClanModal, setShowClanModal] = useState(false);
   const [showMultiplayerModal, setShowMultiplayerModal] = useState(false);
@@ -1081,6 +1088,190 @@ export default function App() {
   const handleToggleMountRef = useRef(handleToggleMount);
   handleToggleMountRef.current = handleToggleMount;
 
+  // 1. Request direct peer-to-peer pet trade
+  const handleRequestPetTrade = useCallback(
+    (targetPlayerId: string) => {
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(
+          JSON.stringify({
+            type: 'pet:trade_request',
+            targetPlayerId,
+          })
+        );
+        addFloatingNumber('Sending pet trade request...', '#38bdf8');
+      } else {
+        addFloatingNumber('Multiplayer connection offline', '#ef4444');
+      }
+    },
+    [addFloatingNumber]
+  );
+
+  // 2. Update staged pets, silver, lock and acceptance in active trade session
+  const handleUpdatePetTrade = useCallback(
+    (offeredPets: PetId[], offeredSilver: number, locked: boolean, accepted: boolean) => {
+      if (!activePetTradeSession) return;
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(
+          JSON.stringify({
+            type: 'pet:trade_update',
+            tradeId: activePetTradeSession.tradeId,
+            pets: offeredPets,
+            silver: offeredSilver,
+            locked,
+            accepted,
+          })
+        );
+      }
+    },
+    [activePetTradeSession]
+  );
+
+  // 3. Cancel active pet trade session
+  const handleCancelPetTrade = useCallback(() => {
+    if (activePetTradeSession && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(
+        JSON.stringify({
+          type: 'pet:trade_cancel',
+          tradeId: activePetTradeSession.tradeId,
+          playerName: stats.name,
+        })
+      );
+    }
+    setActivePetTradeSession(null);
+    setIncomingTradeNotice(null);
+  }, [activePetTradeSession, stats.name]);
+
+  // 4. Post listing on public Realm Barter Board
+  const handlePostPetListing = useCallback(
+    (offeredPetId: PetId, offeredSilver: number, wantedPetId: PetId, wantedSilver: number) => {
+      const p = pets.find((x) => x.id === offeredPetId);
+      if (!p || !p.unlocked || p.count <= 0) {
+        addFloatingNumber(`You don't own this pet to list!`, '#ef4444');
+        return;
+      }
+      if (stats.silver < offeredSilver) {
+        addFloatingNumber(`Not enough silver for collateral!`, '#ef4444');
+        return;
+      }
+
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(
+          JSON.stringify({
+            type: 'pet:post_listing',
+            creatorName: stats.name,
+            creatorClan: stats.clan,
+            offeredPetId,
+            offeredSilver,
+            wantedPetId,
+            wantedSilver,
+          })
+        );
+      } else {
+        const localListing: PublicPetTradeListing = {
+          id: `listing_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+          creatorId: selfPlayerIdRef.current,
+          creatorName: stats.name,
+          creatorClan: stats.clan,
+          offeredPetId,
+          offeredSilver,
+          wantedPetId,
+          wantedSilver,
+          createdAt: Date.now(),
+          completed: false,
+        };
+        setPublicPetTradeListings((prev) => [localListing, ...prev]);
+      }
+
+      setPets((prev) =>
+        prev.map((pet) =>
+          pet.id === offeredPetId
+            ? { ...pet, count: Math.max(0, pet.count - 1), unlocked: pet.count - 1 > 0 }
+            : pet
+        )
+      );
+      setStats((prev) => ({ ...prev, silver: Math.max(0, prev.silver - offeredSilver) }));
+      sound.playFanfare();
+      addFloatingNumber('📜 Pet Trade Offer Posted to Realm Board!', '#38bdf8', true);
+    },
+    [pets, stats.silver, stats.name, stats.clan, addFloatingNumber]
+  );
+
+  // 5. Claim a listing on public Realm Barter Board
+  const handleClaimPetListing = useCallback(
+    (listingId: string) => {
+      const listing = publicPetTradeListings.find((l) => l.id === listingId);
+      if (!listing || listing.completed) return;
+
+      const hasWantedPet = pets.some((x) => x.id === listing.wantedPetId && x.unlocked && x.count > 0);
+      if (!hasWantedPet) {
+        addFloatingNumber('You do not own the wanted companion pet!', '#ef4444');
+        return;
+      }
+      if (stats.silver < listing.wantedSilver) {
+        addFloatingNumber('Not enough silver for this listing!', '#ef4444');
+        return;
+      }
+
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(
+          JSON.stringify({
+            type: 'pet:claim_listing',
+            listingId,
+          })
+        );
+      }
+
+      setPets((prev) =>
+        prev.map((item) => {
+          if (item.id === listing.wantedPetId) {
+            const c = Math.max(0, item.count - 1);
+            return { ...item, count: c, unlocked: c > 0 };
+          }
+          if (item.id === listing.offeredPetId) {
+            return { ...item, count: item.count + 1, unlocked: true };
+          }
+          return item;
+        })
+      );
+      setStats((prev) => ({
+        ...prev,
+        silver: Math.max(0, prev.silver - listing.wantedSilver + listing.offeredSilver),
+      }));
+      setPublicPetTradeListings((prev) =>
+        prev.map((l) => (l.id === listingId ? { ...l, completed: true } : l))
+      );
+      sound.playVictoryTriumph();
+      addFloatingNumber('🤝 BARTER CLAIMED! Companion Pet Received!', '#10b981', true);
+    },
+    [publicPetTradeListings, pets, stats.silver, addFloatingNumber]
+  );
+
+  // 6. Instant 1:1 Clan Beastmaster Barter
+  const handleInstantClanTrade = useCallback(
+    (offeredPetId: PetId, wantedPetId: PetId, traderName: string) => {
+      const hasPet = pets.some((p) => p.id === offeredPetId && p.unlocked && p.count > 0);
+      if (!hasPet) {
+        addFloatingNumber(`You don't own this pet to trade!`, '#ef4444');
+        return;
+      }
+      sound.playVictoryTriumph();
+      setPets((prev) =>
+        prev.map((p) => {
+          if (p.id === offeredPetId) {
+            const c = Math.max(0, p.count - 1);
+            return { ...p, count: c, unlocked: c > 0 };
+          }
+          if (p.id === wantedPetId) {
+            return { ...p, count: p.count + 1, unlocked: true };
+          }
+          return p;
+        })
+      );
+      addFloatingNumber(`🤝 Barter Complete with ${traderName}!`, '#10b981', true);
+    },
+    [pets, addFloatingNumber]
+  );
+
   // Trigger Special Weapon Skill (Z = Whirlwind, X = Thunder Leap, F = Frost Nova)
   const handleTriggerSkill = useCallback(
     (skillId: 'whirlwind' | 'thunder_leap' | 'frost_nova') => {
@@ -1698,7 +1889,7 @@ export default function App() {
           advanceQuest('sail', 1);
           unlockBadge('badge_shipwright');
           sound.playFanfare();
-          player.position.set(22, 4, 85);
+          player.position.set(22, 3.75, 87);
           player.velocity.set(0, 0, 0);
           setMessages((prev) => [
             ...prev,
@@ -2107,6 +2298,13 @@ export default function App() {
       setShowMeadHallModal(true);
       return;
     }
+
+    // 6. Check Katfjord Pet Trading Post & Barter Hall (-12, 3.2, 22)
+    if (playerPos.distanceTo(new THREE.Vector3(-12, 3.2, 22)) < 9) {
+      sound.playFanfare();
+      setShowPetTradingModal(true);
+      return;
+    }
   }, [advanceQuest]);
 
   // Keep stable refs for event handlers to prevent Three.js scene remounting
@@ -2160,6 +2358,10 @@ export default function App() {
   statsRef.current = stats;
   const activeMountIdRef = useRef(activeMountId);
   activeMountIdRef.current = activeMountId;
+  const activePetIdRef = useRef(activePetId);
+  activePetIdRef.current = activePetId;
+  const petsRef = useRef(pets);
+  petsRef.current = pets;
 
   // Real-Time WebSocket Multiplayer Connection & Event Synchronization
   useEffect(() => {
@@ -2204,6 +2406,8 @@ export default function App() {
               activeTool: p ? p.activeTool : 'axe',
               isSailing: s.isSailing,
               mountId: activeMountIdRef.current,
+              activePetId: activePetIdRef.current,
+              unlockedPets: petsRef.current.filter((p) => p.unlocked && p.count > 0).map((p) => p.id),
             },
           })
         );
@@ -2232,6 +2436,7 @@ export default function App() {
             if (Array.isArray(msg.activePings)) setActivePings(msg.activePings);
             if (msg.supplyDrop) setSupplyDrop(msg.supplyDrop);
             if (msg.territoryHolder) setTerritoryHolder(msg.territoryHolder);
+            if (Array.isArray(msg.publicPetListings)) setPublicPetTradeListings(msg.publicPetListings);
 
             if (Array.isArray(msg.chatHistory)) {
               setMessages((prev) => {
@@ -2366,6 +2571,71 @@ export default function App() {
                 prev.some((m) => m.id === msg.message.id) ? prev : [...prev, msg.message]
               );
             }
+          } else if (type === 'pet:trade_started') {
+            setActivePetTradeSession(msg.session);
+            setShowPetTradingModal(true);
+            sound.playFanfare();
+            addFloatingNumberRef.current('🤝 Pet Trade Session Opened!', '#10b981', true);
+          } else if (type === 'pet:trade_invite') {
+            setActivePetTradeSession(msg.session);
+            setIncomingTradeNotice({
+              senderName: msg.session.senderName,
+              tradeId: msg.session.tradeId,
+            });
+            sound.playWarHorn();
+            addFloatingNumberRef.current(`🤝 Trade Request from ${msg.session.senderName}!`, '#38bdf8', true);
+          } else if (type === 'pet:trade_sync') {
+            setActivePetTradeSession(msg.session);
+          } else if (type === 'pet:trade_completed') {
+            const session = msg.session as ActivePetTradeSession;
+            setActivePetTradeSession(session);
+            sound.playVictoryTriumph();
+            const isSender = session.senderId === selfPlayerIdRef.current;
+            const givenPets = isSender ? session.senderPets : session.receiverPets;
+            const receivedPets = isSender ? session.receiverPets : session.senderPets;
+            const givenSilver = isSender ? session.senderSilver : session.receiverSilver;
+            const receivedSilver = isSender ? session.receiverSilver : session.senderSilver;
+
+            setPets((prev) => {
+              const next = [...prev];
+              for (const gId of givenPets) {
+                const idx = next.findIndex((p) => p.id === gId);
+                if (idx !== -1) {
+                  const newCount = Math.max(0, next[idx].count - 1);
+                  next[idx] = { ...next[idx], count: newCount, unlocked: newCount > 0 };
+                }
+              }
+              for (const rId of receivedPets) {
+                const idx = next.findIndex((p) => p.id === rId);
+                if (idx !== -1) {
+                  next[idx] = { ...next[idx], count: next[idx].count + 1, unlocked: true };
+                }
+              }
+              return next;
+            });
+
+            setStats((prev) => ({
+              ...prev,
+              silver: Math.max(0, prev.silver - givenSilver + receivedSilver),
+            }));
+
+            addFloatingNumberRef.current('🤝 PET TRADE COMPLETED!', '#10b981', true);
+            unlockBadge('badge_clan_warlord');
+          } else if (type === 'pet:trade_cancelled') {
+            setActivePetTradeSession(null);
+            setIncomingTradeNotice(null);
+            addFloatingNumberRef.current(`Trade cancelled by ${msg.cancelledByName || 'Trader'}`, '#f87171', false);
+          } else if (type === 'pet:trade_error') {
+            addFloatingNumberRef.current(String(msg.error || 'Pet trade failed'), '#ef4444', true);
+          } else if (type === 'pet:new_listing') {
+            setPublicPetTradeListings((prev) => {
+              if (prev.some((l) => l.id === msg.listing.id)) return prev;
+              return [msg.listing, ...prev];
+            });
+          } else if (type === 'pet:listing_claimed') {
+            setPublicPetTradeListings((prev) =>
+              prev.map((l) => (l.id === msg.listingId ? { ...l, completed: true } : l))
+            );
           }
         } catch {
           // Ignore malformed WS packets
@@ -2406,6 +2676,8 @@ export default function App() {
           isBlocking: p.isBlocking,
           isSailing: s.isSailing,
           mountId: activeMountIdRef.current,
+          activePetId: activePetIdRef.current,
+          unlockedPets: petsRef.current.filter((p) => p.unlocked && p.count > 0).map((p) => p.id),
         })
       );
     }, 120);
@@ -2714,7 +2986,13 @@ export default function App() {
         setShowBuildingHUD(false);
         setShowConquestHUD(false);
         setShowDrakkarOnboarding(false);
+        setShowPetTradingModal(false);
         handleCloseDrakkarOnboardingRef.current();
+      }
+
+      // Pet Trading & Barter Hall Key [F2]
+      if (code === 'F2') {
+        setShowPetTradingModal((prev) => !prev);
       }
     };
 
@@ -3545,7 +3823,7 @@ export default function App() {
         worldRef.current.shipSpeed = 16;
         worldRef.current.shipRotation = 0;
         setStats((prev) => ({ ...prev, isSailing: true }));
-        playerRef.current.position.set(22, 4, 85);
+        playerRef.current.position.set(22, 3.75, 87);
         playerRef.current.velocity.set(0, 0, 0);
       } else {
         worldRef.current.isShipMounted = false;
@@ -3671,6 +3949,8 @@ export default function App() {
         onToggleGamepasses={() => setShowGamepasses(!showGamepasses)}
         showPets={showPetsModal}
         onTogglePets={() => setShowPetsModal(!showPetsModal)}
+        showPetTrading={showPetTradingModal}
+        onTogglePetTrading={() => setShowPetTradingModal(!showPetTradingModal)}
         showTycoon={showTycoonModal}
         onToggleTycoon={() => setShowTycoonModal(!showTycoonModal)}
         showClanHub={showClanModal}
@@ -4339,6 +4619,14 @@ export default function App() {
             'pet_fenrir_pup',
             'pet_golden_boar',
             'pet_frost_dragon',
+            'pet_ratatoskr',
+            'pet_jormungandr_serpent',
+            'pet_freya_cat',
+            'pet_surtr_flame_drake',
+            'pet_garmr_hound',
+            'pet_vedrfolnir_hawk',
+            'pet_skoll_wolf',
+            'pet_tanngrisnir_goat',
           ];
           const chosen = pool[Math.floor(Math.random() * pool.length)];
           setPets((prev) =>
@@ -4353,6 +4641,7 @@ export default function App() {
           unlockBadge('badge_pet_tamer');
           return chosen;
         }}
+        onOpenPetTrading={() => setShowPetTradingModal(true)}
         mounts={mounts}
         activeMountId={activeMountId}
         onToggleMount={(mountId) => handleToggleMount(mountId)}
@@ -5093,7 +5382,7 @@ export default function App() {
             if (playerRef.current && worldRef.current) {
               worldRef.current.isShipMounted = true;
               setStats((prev) => ({ ...prev, isSailing: true }));
-              playerRef.current.position.set(22, 4, 85);
+              playerRef.current.position.set(22, 3.75, 87);
               playerRef.current.velocity.set(0, 0, 0);
               sound.playWarHorn();
               addFloatingNumber('⚓ Boarded Drakkar! Press [R] for Frost-Ballistas', '#38bdf8', true);
@@ -5143,7 +5432,7 @@ export default function App() {
           if (playerRef.current && worldRef.current) {
             worldRef.current.isShipMounted = true;
             setStats((prev) => ({ ...prev, isSailing: true }));
-            playerRef.current.position.set(22, 4, 85);
+            playerRef.current.position.set(22, 3.75, 87);
             playerRef.current.velocity.set(0, 0, 0);
             sound.playWarHorn();
             addFloatingNumber('⚓ Boarded Drakkar Longship! Use [WASD] to Sail, [R] for Ballistas', '#38bdf8', true);
@@ -5643,6 +5932,77 @@ export default function App() {
           }));
           addFloatingNumber('🍻 SKÁL! Health & Stamina Restored!', '#facc15', true);
         }}
+      />
+
+      {/* 12. Incoming Pet Trade Invitation Toast Notification */}
+      {incomingTradeNotice && (
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-neutral-900/95 border-2 border-amber-400 rounded-2xl shadow-2xl p-4 flex items-center gap-4 text-white animate-bounce-once">
+          <div className="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-400 flex items-center justify-center text-xl shrink-0">
+            🤝
+          </div>
+          <div>
+            <div className="text-xs uppercase font-mono tracking-wider text-amber-300 font-bold">
+              Incoming Pet Barter Request
+            </div>
+            <div className="text-sm font-semibold text-neutral-100">
+              <span className="text-amber-400 font-bold">{incomingTradeNotice.senderName}</span> wants to trade companion pets!
+            </div>
+          </div>
+          <div className="flex items-center gap-2 ml-2">
+            <button
+              onClick={() => {
+                setShowPetTradingModal(true);
+                setIncomingTradeNotice(null);
+              }}
+              className="px-3.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-bold text-xs shadow cursor-pointer transition"
+            >
+              Accept
+            </button>
+            <button
+              onClick={() => {
+                if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && activePetTradeSession) {
+                  wsRef.current.send(
+                    JSON.stringify({
+                      type: 'pet:trade_cancel',
+                      tradeId: activePetTradeSession.tradeId,
+                      playerName: stats.name,
+                    })
+                  );
+                }
+                setActivePetTradeSession(null);
+                setIncomingTradeNotice(null);
+              }}
+              className="px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 font-semibold text-xs cursor-pointer transition"
+            >
+              Decline
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 13. Katfjord Pet Trading Post & Player Barter Hall Modal */}
+      <PetTradingModal
+        isOpen={showPetTradingModal}
+        onClose={() => {
+          setShowPetTradingModal(false);
+          if (activePetTradeSession) {
+            handleCancelPetTrade();
+          }
+        }}
+        selfId={selfPlayerIdRef.current}
+        playerName={stats.name}
+        playerClan={stats.clan}
+        playerSilver={stats.silver}
+        pets={pets}
+        remotePlayers={remotePlayers}
+        activeSession={activePetTradeSession}
+        publicListings={publicPetTradeListings}
+        onRequestTrade={handleRequestPetTrade}
+        onUpdateTrade={handleUpdatePetTrade}
+        onCancelTrade={handleCancelPetTrade}
+        onPostListing={handlePostPetListing}
+        onClaimListing={handleClaimPetListing}
+        onInstantClanTrade={handleInstantClanTrade}
       />
     </div>
   );
