@@ -32,6 +32,11 @@ import {
   Skull,
   Ship,
   ArrowLeftRight,
+  Camera,
+  Video,
+  Moon,
+  Music,
+  Share2,
 } from 'lucide-react';
 import { WeatherCondition } from '../types';
 import { sound } from '../audio/soundEngine';
@@ -90,6 +95,22 @@ interface RobloxTopBarProps {
   onToggleDrakkarTour?: () => void;
   onOpenEscMenu?: () => void;
   onToggleBackpack?: () => void;
+  showScreenshots?: boolean;
+  onToggleScreenshots?: () => void;
+  showYouTubeStudio?: boolean;
+  onToggleYouTubeStudio?: () => void;
+  showDrakkarCrew?: boolean;
+  onToggleDrakkarCrew?: () => void;
+  showRagnarokEclipse?: boolean;
+  onToggleRagnarokEclipse?: () => void;
+  showPetFusion?: boolean;
+  onTogglePetFusion?: () => void;
+  showModularFortress?: boolean;
+  onToggleModularFortress?: () => void;
+  showSkaldRhythm?: boolean;
+  onToggleSkaldRhythm?: () => void;
+  showFriendRally?: boolean;
+  onToggleFriendRally?: () => void;
 }
 
 export const RobloxTopBar: React.FC<RobloxTopBarProps> = ({
@@ -145,6 +166,22 @@ export const RobloxTopBar: React.FC<RobloxTopBarProps> = ({
   onToggleDrakkarTour,
   onOpenEscMenu,
   onToggleBackpack,
+  showScreenshots,
+  onToggleScreenshots,
+  showYouTubeStudio,
+  onToggleYouTubeStudio,
+  showDrakkarCrew,
+  onToggleDrakkarCrew,
+  showRagnarokEclipse,
+  onToggleRagnarokEclipse,
+  showPetFusion,
+  onTogglePetFusion,
+  showModularFortress,
+  onToggleModularFortress,
+  showSkaldRhythm,
+  onToggleSkaldRhythm,
+  showFriendRally,
+  onToggleFriendRally,
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -396,6 +433,118 @@ export const RobloxTopBar: React.FC<RobloxTopBarProps> = ({
             >
               <ArrowLeftRight className="w-3.5 h-3.5 text-amber-400" />
               <span className="hidden xl:inline">Pet Trade</span>
+            </button>
+          )}
+
+          {/* Official Game Screenshots & Upload Kit */}
+          {onToggleScreenshots && (
+            <button
+              onClick={onToggleScreenshots}
+              className={`hidden md:flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded transition text-xs font-bold shrink-0 cursor-pointer ${
+                showScreenshots
+                  ? 'bg-emerald-500 text-neutral-950 shadow-md ring-1 ring-emerald-300'
+                  : 'bg-neutral-800 hover:bg-neutral-700 text-emerald-300 border border-emerald-500/40'
+              }`}
+              title="Official Screenshots & Press Kit (Download 5 Full HD Images)"
+            >
+              <Camera className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="hidden xl:inline">Screenshots</span>
+            </button>
+          )}
+
+          {/* YouTube Video Studio & Trailer Creator */}
+          {onToggleYouTubeStudio && (
+            <button
+              onClick={onToggleYouTubeStudio}
+              className={`hidden md:flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded transition text-xs font-bold shrink-0 cursor-pointer ${
+                showYouTubeStudio
+                  ? 'bg-red-600 text-white shadow-md ring-1 ring-red-400'
+                  : 'bg-neutral-800 hover:bg-neutral-700 text-red-400 border border-red-500/40'
+              }`}
+              title="YouTube Video Studio (Record 1080p Trailers & Gameplay, Thumbnails & SEO)"
+            >
+              <Video className="w-3.5 h-3.5 text-red-500" />
+              <span className="hidden xl:inline">YouTube Studio</span>
+            </button>
+          )}
+
+          {/* Multi-Crew Drakkar Warship Station HUD */}
+          {onToggleDrakkarCrew && (
+            <button
+              onClick={onToggleDrakkarCrew}
+              className={`hidden md:flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded transition text-xs font-bold shrink-0 cursor-pointer ${
+                showDrakkarCrew
+                  ? 'bg-amber-500 text-neutral-950 shadow-md ring-1 ring-amber-300'
+                  : 'bg-neutral-800 hover:bg-neutral-700 text-amber-300 border border-amber-500/40'
+              }`}
+              title="Drakkar Multi-Crew Warship Stations & Rhythm Rowing [K]"
+            >
+              <Ship className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden xl:inline">Crew Ship</span>
+            </button>
+          )}
+
+          {/* Pet Runic Fusion & Breeding Altar */}
+          {onTogglePetFusion && (
+            <button
+              onClick={onTogglePetFusion}
+              className={`hidden md:flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded transition text-xs font-bold shrink-0 cursor-pointer ${
+                showPetFusion
+                  ? 'bg-purple-600 text-white shadow-md ring-1 ring-purple-300'
+                  : 'bg-neutral-800 hover:bg-neutral-700 text-purple-300 border border-purple-500/40'
+              }`}
+              title="Pet Runic Fusion & Ancient Breeding Altar [F5]"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+              <span className="hidden xl:inline">Pet Fusion</span>
+            </button>
+          )}
+
+          {/* Modular Clan Fortress Builder */}
+          {onToggleModularFortress && (
+            <button
+              onClick={onToggleModularFortress}
+              className={`hidden md:flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded transition text-xs font-bold shrink-0 cursor-pointer ${
+                showModularFortress
+                  ? 'bg-emerald-600 text-white shadow-md ring-1 ring-emerald-300'
+                  : 'bg-neutral-800 hover:bg-neutral-700 text-emerald-300 border border-emerald-500/40'
+              }`}
+              title="Modular Clan Fortress Building & Defenses [F6]"
+            >
+              <Hammer className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="hidden xl:inline">Fortress</span>
+            </button>
+          )}
+
+          {/* Mead Hall Skald Rhythm Mini-Game */}
+          {onToggleSkaldRhythm && (
+            <button
+              onClick={onToggleSkaldRhythm}
+              className={`hidden md:flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded transition text-xs font-bold shrink-0 cursor-pointer ${
+                showSkaldRhythm
+                  ? 'bg-amber-400 text-neutral-950 shadow-md ring-1 ring-amber-200'
+                  : 'bg-neutral-800 hover:bg-neutral-700 text-amber-300 border border-amber-500/40'
+              }`}
+              title="Katfjord Mead Hall Skald Rhythm Recital [F7]"
+            >
+              <Music className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden xl:inline">Skald Melodies</span>
+            </button>
+          )}
+
+          {/* 1-Click Friend Rally Invite Link */}
+          {onToggleFriendRally && (
+            <button
+              onClick={onToggleFriendRally}
+              className={`hidden md:flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded transition text-xs font-bold shrink-0 cursor-pointer ${
+                showFriendRally
+                  ? 'bg-sky-500 text-neutral-950 shadow-md ring-1 ring-sky-300'
+                  : 'bg-neutral-800 hover:bg-neutral-700 text-sky-300 border border-sky-500/40'
+              }`}
+              title="Instant 1-Click Crew Rally & Friend Invite Link"
+            >
+              <Share2 className="w-3.5 h-3.5 text-sky-400" />
+              <span className="hidden xl:inline">Rally Friends</span>
             </button>
           )}
 
@@ -790,6 +939,110 @@ export const RobloxTopBar: React.FC<RobloxTopBarProps> = ({
               >
                 <ArrowLeftRight className="w-4 h-4 text-amber-400 shrink-0" />
                 <span>Pet Trade Post</span>
+              </button>
+            )}
+
+            {onToggleScreenshots && (
+              <button
+                onClick={() => {
+                  onToggleScreenshots();
+                  setShowMobileMenu(false);
+                }}
+                className="flex items-center gap-2 p-2 bg-emerald-950/70 hover:bg-emerald-900 rounded-xl border border-emerald-500/40 text-left text-xs font-medium text-emerald-200"
+              >
+                <Camera className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>Screenshots (5)</span>
+              </button>
+            )}
+
+            {onToggleYouTubeStudio && (
+              <button
+                onClick={() => {
+                  onToggleYouTubeStudio();
+                  setShowMobileMenu(false);
+                }}
+                className="flex items-center gap-2 p-2 bg-red-950/70 hover:bg-red-900 rounded-xl border border-red-500/40 text-left text-xs font-medium text-red-200"
+              >
+                <Video className="w-4 h-4 text-red-500 shrink-0" />
+                <span>YouTube Studio</span>
+              </button>
+            )}
+
+            {onToggleDrakkarCrew && (
+              <button
+                onClick={() => {
+                  onToggleDrakkarCrew();
+                  setShowMobileMenu(false);
+                }}
+                className="flex items-center gap-2 p-2 bg-amber-950/70 hover:bg-amber-900 rounded-xl border border-amber-500/40 text-left text-xs font-medium text-amber-200"
+              >
+                <Ship className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>Multi-Crew Drakkar</span>
+              </button>
+            )}
+
+            {onTogglePetFusion && (
+              <button
+                onClick={() => {
+                  onTogglePetFusion();
+                  setShowMobileMenu(false);
+                }}
+                className="flex items-center gap-2 p-2 bg-purple-950/70 hover:bg-purple-900 rounded-xl border border-purple-500/40 text-left text-xs font-medium text-purple-200"
+              >
+                <Sparkles className="w-4 h-4 text-purple-400 shrink-0" />
+                <span>Pet Runic Fusion</span>
+              </button>
+            )}
+
+            {onToggleModularFortress && (
+              <button
+                onClick={() => {
+                  onToggleModularFortress();
+                  setShowMobileMenu(false);
+                }}
+                className="flex items-center gap-2 p-2 bg-emerald-950/70 hover:bg-emerald-900 rounded-xl border border-emerald-500/40 text-left text-xs font-medium text-emerald-200"
+              >
+                <Hammer className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>Modular Fortress</span>
+              </button>
+            )}
+
+            {onToggleSkaldRhythm && (
+              <button
+                onClick={() => {
+                  onToggleSkaldRhythm();
+                  setShowMobileMenu(false);
+                }}
+                className="flex items-center gap-2 p-2 bg-amber-950/70 hover:bg-amber-900 rounded-xl border border-amber-500/40 text-left text-xs font-medium text-amber-200"
+              >
+                <Music className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>Skald Melodies</span>
+              </button>
+            )}
+
+            {onToggleFriendRally && (
+              <button
+                onClick={() => {
+                  onToggleFriendRally();
+                  setShowMobileMenu(false);
+                }}
+                className="flex items-center gap-2 p-2 bg-sky-950/70 hover:bg-sky-900 rounded-xl border border-sky-500/40 text-left text-xs font-medium text-sky-200"
+              >
+                <Share2 className="w-4 h-4 text-sky-400 shrink-0" />
+                <span>Rally Friends</span>
+              </button>
+            )}
+
+            {onToggleRagnarokEclipse && (
+              <button
+                onClick={() => {
+                  onToggleRagnarokEclipse();
+                  setShowMobileMenu(false);
+                }}
+                className="flex items-center gap-2 p-2 bg-red-950/80 hover:bg-red-900 rounded-xl border border-red-500/50 text-left text-xs font-medium text-red-200"
+              >
+                <Moon className="w-4 h-4 text-red-400 shrink-0" />
+                <span>Ragnarök Eclipse</span>
               </button>
             )}
 

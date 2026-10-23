@@ -69,9 +69,17 @@ import {
   MaelstromSalvageState,
   HolmgangDuelState,
   ActiveFeastBuff,
-  FeastBuffType,
   ActivePetTradeSession,
   PublicPetTradeListing,
+  CrewStation,
+  MultiCrewDrakkarState,
+  RagnarokEclipseEventState,
+  RunicCatalystType,
+  FusedPetChimera,
+  ModularFortressPiece,
+  NorseInstrumentType,
+  SkaldSongTrack,
+  FriendRallySession,
 } from './types';
 import { FishingManager } from './game/FishingManager';
 import { ArcheryManager } from './game/ArcheryManager';
@@ -141,6 +149,14 @@ import { MaelstromSalvageHUD } from './components/MaelstromSalvageHUD';
 import { HolmgangDuelModal } from './components/HolmgangDuelModal';
 import { MeadHallFeastModal } from './components/MeadHallFeastModal';
 import { PetTradingModal } from './components/PetTradingModal';
+import { ScreenshotsGalleryModal } from './components/ScreenshotsGalleryModal';
+import { YouTubeStudioModal } from './components/YouTubeStudioModal';
+import { DrakkarMultiCrewHUD } from './components/DrakkarMultiCrewHUD';
+import { RagnarokEclipseHUD } from './components/RagnarokEclipseHUD';
+import { PetFusionAltarModal } from './components/PetFusionAltarModal';
+import { ModularFortressBuilderHUD } from './components/ModularFortressBuilderHUD';
+import { SkaldMeadHallRhythmModal } from './components/SkaldMeadHallRhythmModal';
+import { FriendRallyModal } from './components/FriendRallyModal';
 import { RobloxEscMenu } from './components/RobloxEscMenu';
 import { RobloxOverheadDisplay, OverheadBubble, FloatingDamageNumber } from './components/RobloxOverheadDisplay';
 import { RobloxBackpackModal } from './components/RobloxBackpackModal';
@@ -436,6 +452,91 @@ export default function App() {
   const [activePetTradeSession, setActivePetTradeSession] = useState<ActivePetTradeSession | null>(null);
   const [publicPetTradeListings, setPublicPetTradeListings] = useState<PublicPetTradeListing[]>([]);
   const [incomingTradeNotice, setIncomingTradeNotice] = useState<{ senderName: string; tradeId: string } | null>(null);
+  const [showScreenshotsModal, setShowScreenshotsModal] = useState(false);
+  const [showYouTubeStudio, setShowYouTubeStudio] = useState(false);
+
+  // 6 Breakthrough Superior-To-Roblox Systems State
+  const [showDrakkarCrewHUD, setShowDrakkarCrewHUD] = useState(false);
+  const [showRagnarokEclipseHUD, setShowRagnarokEclipseHUD] = useState(false);
+  const [showPetFusionModal, setShowPetFusionModal] = useState(false);
+  const [showModularFortressHUD, setShowModularFortressHUD] = useState(false);
+  const [showSkaldRhythmModal, setShowSkaldRhythmModal] = useState(false);
+  const [showFriendRallyModal, setShowFriendRallyModal] = useState(false);
+
+  // 1. Multi-Crew Drakkar State
+  const [multiCrewState, setMultiCrewState] = useState<MultiCrewDrakkarState>({
+    activeCrew: {
+      helmsman: { station: 'helmsman', assignedTo: 'player', isPlayer: true, cadenceScore: 100, lastHitTime: 0 },
+      port_rower: { station: 'port_rower', assignedTo: 'Astrid', isPlayer: false, cadenceScore: 85, lastHitTime: 0 },
+      starboard_rower: { station: 'starboard_rower', assignedTo: 'Torstein', isPlayer: false, cadenceScore: 85, lastHitTime: 0 },
+      ballista_gunner: { station: 'ballista_gunner', assignedTo: 'Floki', isPlayer: false, cadenceScore: 90, lastHitTime: 0 },
+      war_drummer: { station: 'war_drummer', assignedTo: 'Lagertha', isPlayer: false, cadenceScore: 95, lastHitTime: 0 },
+    },
+    cadenceCombo: 1,
+    rowingSpeedMultiplier: 1.2,
+    drumBuffActive: false,
+    gunnerReady: true,
+    rowingBeatOffset: 0,
+  });
+
+  // 2. Ragnarök Eclipse Event State
+  const [ragnarokEclipseState, setRagnarokEclipseState] = useState<RagnarokEclipseEventState>({
+    isActive: false,
+    phase: 'quiescent',
+    timeRemainingSeconds: 240,
+    currentWave: 1,
+    maxWaves: 10,
+    enemiesRemaining: 6,
+    totalDamageDealt: 0,
+    survivorBountyClaimed: false,
+    bossHp: 5000,
+    bossMaxHp: 5000,
+  });
+
+  // 3. Fused Pet Chimeras State
+  const [fusedPetChimeras, setFusedPetChimeras] = useState<FusedPetChimera[]>([
+    {
+      id: 'chimera_fenrir_surtr_magma',
+      name: 'Surtr-Fenrir Primeval Chimera',
+      title: 'Volcanic Wolf of Muspelheim',
+      parents: ['pet_fenrir_pup', 'pet_surtr_flame_drake'],
+      catalyst: 'surtr_magma',
+      damageBonus: 95,
+      valorBonusPercent: 35,
+      activeAbilityName: 'Hellfire Blazing Rush',
+      activeAbilityDesc: 'Unleashes trailing magma streams that ignite enemies for 45 fire damage',
+      iconEmoji: '🔥🐺',
+      colorHex: '#f97316',
+      createdAt: Date.now() - 3600000,
+    },
+  ]);
+
+  // 4. Modular Clan Fortress Pieces State
+  const [modularFortressPieces, setModularFortressPieces] = useState<ModularFortressPiece[]>([
+    {
+      id: 'fort_piece_1',
+      type: 'palisade_heavy',
+      name: 'North Palisade Gate',
+      health: 500,
+      maxHealth: 500,
+      woodCost: 40,
+      ironCost: 0,
+      placedX: -15,
+      placedZ: 18,
+    },
+    {
+      id: 'fort_piece_2',
+      type: 'stone_tower',
+      name: 'Katfjord Watchtower Alpha',
+      health: 1200,
+      maxHealth: 1200,
+      woodCost: 80,
+      ironCost: 40,
+      placedX: -5,
+      placedZ: 25,
+      damagePerSec: 35,
+    },
+  ]);
   const [showTycoonModal, setShowTycoonModal] = useState(false);
   const [showClanModal, setShowClanModal] = useState(false);
   const [showMultiplayerModal, setShowMultiplayerModal] = useState(false);
@@ -1272,6 +1373,280 @@ export default function App() {
     [pets, addFloatingNumber]
   );
 
+  // 1. Multi-Crew Drakkar Rowing & Stations Callbacks
+  const handleRowerStroke = useCallback(
+    (precision: 'perfect' | 'good' | 'miss') => {
+      setMultiCrewState((prev) => {
+        const isHit = precision === 'perfect' || precision === 'good';
+        const comboGain = precision === 'perfect' ? 2 : precision === 'good' ? 1 : 0;
+        const nextCombo = isHit ? Math.min(50, prev.cadenceCombo + comboGain) : 1;
+        const speedMult = +(1.0 + (nextCombo / 50) * 1.5).toFixed(2);
+
+        if (isHit) {
+          addFloatingNumber(precision === 'perfect' ? '⚡ +PERFECT CADENCE' : '✨ ROW!', '#38bdf8');
+        }
+
+        return {
+          ...prev,
+          cadenceCombo: nextCombo,
+          rowingSpeedMultiplier: speedMult,
+        };
+      });
+    },
+    [addFloatingNumber]
+  );
+
+  const handleDrumBeat = useCallback(() => {
+    setMultiCrewState((prev) => ({ ...prev, drumBuffActive: true }));
+    sound.playWarHorn();
+    addFloatingNumber('🥁 WAR DRUM CADENCE BUFF (+30% ALL ROWERS)', '#facc15', true);
+    setTimeout(() => {
+      setMultiCrewState((prev) => ({ ...prev, drumBuffActive: false }));
+    }, 15000);
+  }, [addFloatingNumber]);
+
+  const handleGunnerFire = useCallback(() => {
+    sound.playBowShoot();
+    addFloatingNumber('🎯 FROST BALLISTA HARPOON FIRED!', '#38bdf8', true);
+  }, [addFloatingNumber]);
+
+  const handleAutoFillCrew = useCallback(() => {
+    sound.playFanfare();
+    setMultiCrewState((prev) => ({
+      ...prev,
+      activeCrew: {
+        helmsman: { station: 'helmsman', assignedTo: 'player', isPlayer: true, cadenceScore: 100, lastHitTime: 0 },
+        port_rower: { station: 'port_rower', assignedTo: 'Astrid (Beastmaster)', isPlayer: false, cadenceScore: 95, lastHitTime: 0 },
+        starboard_rower: { station: 'starboard_rower', assignedTo: 'Torstein (Ironfist)', isPlayer: false, cadenceScore: 92, lastHitTime: 0 },
+        ballista_gunner: { station: 'ballista_gunner', assignedTo: 'Floki (Shipwright)', isPlayer: false, cadenceScore: 94, lastHitTime: 0 },
+        war_drummer: { station: 'war_drummer', assignedTo: 'Lagertha (Valkyrie)', isPlayer: false, cadenceScore: 98, lastHitTime: 0 },
+      },
+      cadenceCombo: 12,
+      rowingSpeedMultiplier: 1.8,
+    }));
+    addFloatingNumber('👥 CLAN COMPANIONS MANNED ALL DRAKKAR STATIONS!', '#10b981', true);
+  }, [addFloatingNumber]);
+
+  // 2. Ragnarök Eclipse Cataclysm World Event Callbacks
+  const handleTriggerEclipseEvent = useCallback(() => {
+    sound.playThunder();
+    setRagnarokEclipseState({
+      isActive: true,
+      phase: 'blood_moon',
+      timeRemainingSeconds: 240,
+      currentWave: 1,
+      maxWaves: 10,
+      enemiesRemaining: 6,
+      totalDamageDealt: 0,
+      survivorBountyClaimed: false,
+      bossHp: 5000,
+      bossMaxHp: 5000,
+    });
+    setWeather('stormy');
+    addFloatingNumber('🌑 RAGNARÖK BLOOD MOON ECLIPSE HAS BEGUN!', '#ef4444', true);
+  }, [addFloatingNumber]);
+
+  const handleAttackEclipseInvader = useCallback(() => {
+    setRagnarokEclipseState((prev) => {
+      if (!prev.isActive) return prev;
+      const dmg = Math.floor(65 + Math.random() * 40);
+      const nextRemaining = prev.enemiesRemaining - 1;
+      const newDmg = prev.totalDamageDealt + dmg;
+
+      if (nextRemaining <= 0) {
+        const nextWave = prev.currentWave + 1;
+        sound.playVictoryTriumph();
+        if (nextWave > prev.maxWaves) {
+          addFloatingNumber('👑 FINAL ECLIPSE WAVE CLEARED!', '#facc15', true);
+          return {
+            ...prev,
+            currentWave: nextWave,
+            enemiesRemaining: 0,
+            totalDamageDealt: newDmg,
+            bossHp: 0,
+          };
+        } else {
+          addFloatingNumber(`⚔️ WAVE ${nextWave} APPROACHING!`, '#f97316', true);
+          return {
+            ...prev,
+            currentWave: nextWave,
+            enemiesRemaining: Math.min(12, 5 + nextWave),
+            totalDamageDealt: newDmg,
+            bossHp: Math.max(0, prev.bossHp - 450),
+          };
+        }
+      }
+
+      addFloatingNumber(`-${dmg} DMG to Shadow Beast`, '#ef4444');
+      return {
+        ...prev,
+        enemiesRemaining: nextRemaining,
+        totalDamageDealt: newDmg,
+        bossHp: Math.max(0, prev.bossHp - dmg),
+      };
+    });
+  }, [addFloatingNumber]);
+
+  const handleClaimRagnarokBounty = useCallback(() => {
+    sound.playFanfare();
+    setStats((prev) => ({
+      ...prev,
+      silver: prev.silver + 1500,
+      valor: prev.valor + 1200,
+      level: Math.floor((prev.valor + 1200) / 200) + 1,
+    }));
+    setRagnarokEclipseState((prev) => ({ ...prev, survivorBountyClaimed: true }));
+    unlockBadge('badge_conqueror');
+    addFloatingNumber('🏆 RAGNARÖK BOUNTY CLAIMED: +1,500 Silver & +1,200 Valor!', '#facc15', true);
+  }, [addFloatingNumber, unlockBadge]);
+
+  // 3. Pet Runic Fusion Callback
+  const handleFusePets = useCallback(
+    (
+      primaryPetId: PetId,
+      secondaryPetId: PetId,
+      catalyst: RunicCatalystType,
+      silverCost: number
+    ): FusedPetChimera | null => {
+      if (stats.silver < silverCost) {
+        addFloatingNumber(`Need ${silverCost} Silver for Runic Fusion!`, '#ef4444');
+        return null;
+      }
+
+      const p1 = pets.find((p) => p.id === primaryPetId);
+      const p2 = pets.find((p) => p.id === secondaryPetId);
+      if (!p1 || !p2) return null;
+
+      const p1Name = p1.name.split(' ')[0];
+      const p2Name = p2.name.split(' ')[0];
+      const catalystName =
+        catalyst === 'thor_lightning'
+          ? 'Thunder'
+          : catalyst === 'surtr_magma'
+          ? 'Magma'
+          : catalyst === 'freya_grace'
+          ? 'Nature'
+          : 'Runic';
+
+      const chimeraName = `${p1Name}-${p2Name} ${catalystName} Chimera`;
+      const chimera: FusedPetChimera = {
+        id: `chimera_${Date.now()}`,
+        name: chimeraName,
+        title: `Forged from ${p1.name} & ${p2.name}`,
+        parents: [primaryPetId, secondaryPetId],
+        catalyst,
+        damageBonus: Math.round((p1.damageBonus + p2.damageBonus) * 1.35),
+        valorBonusPercent: Math.round(30 + Math.random() * 20),
+        activeAbilityName: `${catalystName} Runic Barrage`,
+        activeAbilityDesc: `Strikes nearby enemies for massive hybrid elemental damage`,
+        iconEmoji:
+          catalyst === 'surtr_magma'
+            ? '🔥🐉'
+            : catalyst === 'thor_lightning'
+            ? '⚡🐺'
+            : catalyst === 'freya_grace'
+            ? '🌿🐗'
+            : '✨🦅',
+        colorHex:
+          catalyst === 'surtr_magma'
+            ? '#f97316'
+            : catalyst === 'thor_lightning'
+            ? '#38bdf8'
+            : catalyst === 'freya_grace'
+            ? '#10b981'
+            : '#a855f7',
+        createdAt: Date.now(),
+      };
+
+      setStats((prev) => ({ ...prev, silver: prev.silver - silverCost }));
+      setFusedPetChimeras((prev) => [chimera, ...prev]);
+      sound.playVictoryTriumph();
+      addFloatingNumber(`✨ FORGED ${chimeraName.toUpperCase()}!`, '#facc15', true);
+      return chimera;
+    },
+    [stats.silver, pets, addFloatingNumber]
+  );
+
+  // 4. Modular Clan Fortress Building Callbacks
+  const handlePlaceFortressPiece = useCallback(
+    (type: ModularFortressPiece['type']) => {
+      const costs: Record<
+        ModularFortressPiece['type'],
+        { wood: number; iron: number; hp: number; name: string }
+      > = {
+        palisade_heavy: { wood: 40, iron: 0, hp: 500, name: 'Heavy Spiked Palisade' },
+        stone_tower: { wood: 80, iron: 40, hp: 1200, name: 'Reinforced Stone Tower' },
+        portcullis_iron: { wood: 60, iron: 80, hp: 1500, name: 'Iron Portcullis Gate' },
+        defense_catapult: { wood: 120, iron: 60, hp: 800, name: 'Fortress Defense Catapult' },
+        cauldron_pitch: { wood: 20, iron: 50, hp: 600, name: 'Boiling Pitch Cauldron' },
+        spiked_trench: { wood: 30, iron: 10, hp: 350, name: 'Spiked Trench Barricade' },
+      };
+      const c = costs[type];
+      if (stats.wood < c.wood || stats.iron < c.iron) {
+        addFloatingNumber('Not enough wood or iron resources!', '#ef4444');
+        return;
+      }
+      const playerPos = playerRef.current ? playerRef.current.position : new THREE.Vector3(0, 0, 0);
+      const piece: ModularFortressPiece = {
+        id: `fort_${Date.now()}`,
+        type,
+        name: c.name,
+        health: c.hp,
+        maxHealth: c.hp,
+        woodCost: c.wood,
+        ironCost: c.iron,
+        placedX: Math.round(playerPos.x),
+        placedZ: Math.round(playerPos.z),
+      };
+      setStats((prev) => ({ ...prev, wood: prev.wood - c.wood, iron: prev.iron - c.iron }));
+      setModularFortressPieces((prev) => [...prev, piece]);
+      sound.playHammerBuild();
+      addFloatingNumber(`🔨 Erected ${c.name}!`, '#10b981', true);
+    },
+    [stats.wood, stats.iron, addFloatingNumber]
+  );
+
+  const handleRepairFortressPiece = useCallback(
+    (pieceId: string) => {
+      if (stats.wood < 15) {
+        addFloatingNumber('Need 15 Wood to repair!', '#ef4444');
+        return;
+      }
+      setStats((prev) => ({ ...prev, wood: prev.wood - 15 }));
+      setModularFortressPieces((prev) =>
+        prev.map((p) => (p.id === pieceId ? { ...p, health: p.maxHealth } : p))
+      );
+      sound.playHammerBuild();
+      addFloatingNumber('🔨 Fortress Defense Repaired to 100%!', '#10b981');
+    },
+    [stats.wood, addFloatingNumber]
+  );
+
+  const handleDismantlePiece = useCallback(
+    (pieceId: string) => {
+      setModularFortressPieces((prev) => prev.filter((p) => p.id !== pieceId));
+      sound.playWoodHit();
+      addFloatingNumber('Dismantled Fortress Piece (+20 Wood Returned)', '#94a3b8');
+      setStats((prev) => ({ ...prev, wood: prev.wood + 20 }));
+    },
+    [addFloatingNumber]
+  );
+
+  // 5. Skald Mead Hall Melodies Callback
+  const handleSkaldSongCompleted = useCallback(
+    (songTitle: string, buffDesc: string) => {
+      sound.playVictoryTriumph();
+      setStats((prev) => ({
+        ...prev,
+        stamina: 100,
+        health: Math.min(prev.maxHealth, prev.health + 30),
+        valor: prev.valor + 350,
+      }));
+      addFloatingNumber(`🎶 SKALDIC SONG OF ${songTitle.toUpperCase()} APPLIED!`, '#facc15', true);
+    },
+    [addFloatingNumber]
+  );
+
   // Trigger Special Weapon Skill (Z = Whirlwind, X = Thunder Leap, F = Frost Nova)
   const handleTriggerSkill = useCallback(
     (skillId: 'whirlwind' | 'thunder_leap' | 'frost_nova') => {
@@ -1457,6 +1832,45 @@ export default function App() {
       // ignore
     }
   }, [handleDrakkarCameraStep]);
+
+  // 6. Instant 1-Click Friend Rally URL Parameter Handler
+  useEffect(() => {
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.get('rally') === 'crew') {
+        const chieftain = searchParams.get('chieftain') || 'Jarl';
+        const clanParam = searchParams.get('clan') || 'Raven';
+        const stationParam = (searchParams.get('station') || 'port_rower') as CrewStation;
+
+        setShowLandingPage(false);
+        setStats((prev) => ({ ...prev, clan: clanParam as any, isSailing: true }));
+        if (worldRef.current && playerRef.current) {
+          worldRef.current.isShipMounted = true;
+          playerRef.current.position.set(22, 3.75, 87);
+          playerRef.current.velocity.set(0, 0, 0);
+        }
+        setShowDrakkarCrewHUD(true);
+        setMultiCrewState((prev) => ({
+          ...prev,
+          activeCrew: {
+            ...prev.activeCrew,
+            [stationParam]: {
+              station: stationParam,
+              assignedTo: 'player',
+              isPlayer: true,
+              cadenceScore: 100,
+              lastHitTime: Date.now(),
+            },
+          },
+        }));
+
+        sound.playWarHorn();
+        addFloatingNumber(`⚔️ RALLIED TO CHIEFTAIN ${chieftain.toUpperCase()}'S CREW!`, '#38bdf8', true);
+      }
+    } catch {
+      // ignore
+    }
+  }, [addFloatingNumber]);
 
   // Passive 1-Second Loop for Tycoon Income, Pet Healing, Territory Tribute & Skill Cooldowns
   useEffect(() => {
@@ -2373,7 +2787,11 @@ export default function App() {
     const connectWebSocket = () => {
       if (isDisposed) return;
       const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${proto}//${window.location.host}/ws/multiplayer`;
+      const host =
+        window.location.host.includes('localhost') || window.location.host.includes('run.app')
+          ? window.location.host
+          : 'ais-pre-yzb7abymv3n45txwlnvrxq-503908319039.europe-west3.run.app';
+      const wsUrl = `${proto}//${host}/ws/multiplayer`;
       ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
@@ -2987,12 +3405,49 @@ export default function App() {
         setShowConquestHUD(false);
         setShowDrakkarOnboarding(false);
         setShowPetTradingModal(false);
+        setShowScreenshotsModal(false);
+        setShowYouTubeStudio(false);
+        setShowDrakkarCrewHUD(false);
+        setShowPetFusionModal(false);
+        setShowModularFortressHUD(false);
+        setShowSkaldRhythmModal(false);
+        setShowFriendRallyModal(false);
         handleCloseDrakkarOnboardingRef.current();
       }
 
       // Pet Trading & Barter Hall Key [F2]
       if (code === 'F2') {
         setShowPetTradingModal((prev) => !prev);
+      }
+
+      // Official Screenshots Gallery & Upload Kit Key [F3]
+      if (code === 'F3') {
+        setShowScreenshotsModal((prev) => !prev);
+      }
+
+      // YouTube Video Studio & Trailer Creator Key [F4]
+      if (code === 'F4') {
+        setShowYouTubeStudio((prev) => !prev);
+      }
+
+      // Pet Runic Fusion & Breeding Altar Key [F5]
+      if (code === 'F5') {
+        setShowPetFusionModal((prev) => !prev);
+      }
+
+      // Modular Clan Fortress Builder Key [F6]
+      if (code === 'F6') {
+        setShowModularFortressHUD((prev) => !prev);
+      }
+
+      // Mead Hall Skald Rhythm Stage Key [F7]
+      if (code === 'F7') {
+        setShowSkaldRhythmModal((prev) => !prev);
+      }
+
+      // 1-Click Friend Rally Key [F8]
+      if (code === 'F8') {
+        setShowFriendRallyModal((prev) => !prev);
       }
     };
 
@@ -3951,6 +4406,22 @@ export default function App() {
         onTogglePets={() => setShowPetsModal(!showPetsModal)}
         showPetTrading={showPetTradingModal}
         onTogglePetTrading={() => setShowPetTradingModal(!showPetTradingModal)}
+        showScreenshots={showScreenshotsModal}
+        onToggleScreenshots={() => setShowScreenshotsModal(!showScreenshotsModal)}
+        showYouTubeStudio={showYouTubeStudio}
+        onToggleYouTubeStudio={() => setShowYouTubeStudio(!showYouTubeStudio)}
+        showDrakkarCrew={showDrakkarCrewHUD}
+        onToggleDrakkarCrew={() => setShowDrakkarCrewHUD(!showDrakkarCrewHUD)}
+        showRagnarokEclipse={showRagnarokEclipseHUD}
+        onToggleRagnarokEclipse={() => setShowRagnarokEclipseHUD(!showRagnarokEclipseHUD)}
+        showPetFusion={showPetFusionModal}
+        onTogglePetFusion={() => setShowPetFusionModal(!showPetFusionModal)}
+        showModularFortress={showModularFortressHUD}
+        onToggleModularFortress={() => setShowModularFortressHUD(!showModularFortressHUD)}
+        showSkaldRhythm={showSkaldRhythmModal}
+        onToggleSkaldRhythm={() => setShowSkaldRhythmModal(!showSkaldRhythmModal)}
+        showFriendRally={showFriendRallyModal}
+        onToggleFriendRally={() => setShowFriendRallyModal(!showFriendRallyModal)}
         showTycoon={showTycoonModal}
         onToggleTycoon={() => setShowTycoonModal(!showTycoonModal)}
         showClanHub={showClanModal}
@@ -6003,6 +6474,96 @@ export default function App() {
         onPostListing={handlePostPetListing}
         onClaimListing={handleClaimPetListing}
         onInstantClanTrade={handleInstantClanTrade}
+      />
+
+      {/* 14. Official Game Screenshots & Upload Kit Modal */}
+      <ScreenshotsGalleryModal
+        isOpen={showScreenshotsModal}
+        onClose={() => setShowScreenshotsModal(false)}
+      />
+
+      {/* 15. YouTube Creator Studio, Video Recorder & Trailer Creator Modal */}
+      <YouTubeStudioModal
+        isOpen={showYouTubeStudio}
+        onClose={() => setShowYouTubeStudio(false)}
+        world={worldRef.current}
+        player={playerRef.current}
+        canvasElement={containerRef.current?.querySelector('canvas') || null}
+      />
+
+      {/* 16. Multi-Crew Drakkar Warship HUD */}
+      {(showDrakkarCrewHUD || stats.isSailing) && (
+        <DrakkarMultiCrewHUD
+          isSailing={true}
+          multiCrewState={multiCrewState}
+          onUpdateCrewStation={(st) =>
+            setMultiCrewState((prev) => ({
+              ...prev,
+              activeCrew: {
+                ...prev.activeCrew,
+                [st]: { ...prev.activeCrew[st], assignedTo: 'player', isPlayer: true },
+              },
+            }))
+          }
+          onRowerStroke={handleRowerStroke}
+          onDrumBeat={handleDrumBeat}
+          onGunnerFire={handleGunnerFire}
+          onAutoFillCrew={handleAutoFillCrew}
+          onClose={() => setShowDrakkarCrewHUD(false)}
+        />
+      )}
+
+      {/* 17. Ragnarök Eclipse Cataclysm World Event HUD */}
+      <RagnarokEclipseHUD
+        eventState={ragnarokEclipseState}
+        onAttackInvader={handleAttackEclipseInvader}
+        onClaimSurvivorBounty={handleClaimRagnarokBounty}
+        onTriggerEclipseEvent={handleTriggerEclipseEvent}
+      />
+
+      {/* 18. Pet Runic Fusion & Ancient Breeding Altar Modal */}
+      <PetFusionAltarModal
+        isOpen={showPetFusionModal}
+        onClose={() => setShowPetFusionModal(false)}
+        silver={stats.silver}
+        pets={pets}
+        fusedChimeras={fusedPetChimeras}
+        onFusePets={handleFusePets}
+        onEquipChimera={(chimeraId) => {
+          const ch = fusedPetChimeras.find((c) => c.id === chimeraId);
+          if (ch) {
+            sound.playVictoryTriumph();
+            addFloatingNumber(`Equipped Chimera ${ch.name}!`, '#a855f7', true);
+          }
+        }}
+      />
+
+      {/* 19. Modular Clan Fortress Builder HUD */}
+      <ModularFortressBuilderHUD
+        isOpen={showModularFortressHUD}
+        onClose={() => setShowModularFortressHUD(false)}
+        wood={stats.wood}
+        iron={stats.iron}
+        fortressPieces={modularFortressPieces}
+        onPlacePiece={handlePlaceFortressPiece}
+        onRepairPiece={handleRepairFortressPiece}
+        onDismantlePiece={handleDismantlePiece}
+      />
+
+      {/* 20. Katfjord Mead Hall Skald Rhythm Recital Modal */}
+      <SkaldMeadHallRhythmModal
+        isOpen={showSkaldRhythmModal}
+        onClose={() => setShowSkaldRhythmModal(false)}
+        onSongCompleted={handleSkaldSongCompleted}
+      />
+
+      {/* 21. 1-Click Friend Rally Invite Link Modal */}
+      <FriendRallyModal
+        isOpen={showFriendRallyModal}
+        onClose={() => setShowFriendRallyModal(false)}
+        playerName={stats.name}
+        clan={stats.clan}
+        isSailing={stats.isSailing}
       />
     </div>
   );

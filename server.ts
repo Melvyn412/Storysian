@@ -462,6 +462,9 @@ async function startServer() {
     res.json({ rooms: summary });
   });
 
+  // Serve static public assets (screenshots, robots.txt, etc.)
+  app.use(express.static(path.resolve(__dirname, 'public')));
+
   // Mount Vite in dev or static dist in production
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({

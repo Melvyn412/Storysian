@@ -859,6 +859,72 @@ class SoundEngine {
     osc.start(t);
     osc.stop(t + 0.38);
   }
+
+  /**
+   * Crisp UI Button Click Chime
+   */
+  public playButtonClick() {
+    if (this.isMuted) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, t);
+    osc.frequency.exponentialRampToValueAtTime(1200, t + 0.05);
+
+    gain.gain.setValueAtTime(0.2, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.06);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(t);
+    osc.stop(t + 0.06);
+  }
+
+  /**
+   * Wood Hit / Oar Cadence Thump
+   */
+  public playWoodHit() {
+    this.playHitImpact(true);
+  }
+
+  /**
+   * Sword Hit / Blade Strike
+   */
+  public playSwordHit() {
+    this.playHitImpact(false);
+  }
+
+  /**
+   * Punch / Blunt Impact
+   */
+  public playPunch() {
+    if (this.isMuted) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(160, t);
+    osc.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+
+    gain.gain.setValueAtTime(0.4, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(t);
+    osc.stop(t + 0.14);
+  }
 }
 
 export const sound = new SoundEngine();

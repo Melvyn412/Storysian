@@ -749,6 +749,96 @@ export interface ValkyrieGliderState {
   wingsUnlocked: boolean;
 }
 
+// 13. Multi-Crew Drakkar Warship & Rhythm Rowing
+export type CrewStation = 'helmsman' | 'port_rower' | 'starboard_rower' | 'ballista_gunner' | 'war_drummer';
+
+export interface CrewMemberState {
+  station: CrewStation;
+  assignedTo: string;
+  isPlayer: boolean;
+  cadenceScore: number;
+  lastHitTime: number;
+}
+
+export interface MultiCrewDrakkarState {
+  activeCrew: Record<CrewStation, CrewMemberState>;
+  cadenceCombo: number;
+  rowingSpeedMultiplier: number;
+  drumBuffActive: boolean;
+  gunnerReady: boolean;
+  rowingBeatOffset: number;
+}
+
+// 14. Ragnarök Eclipse Cataclysm World Event
+export interface RagnarokEclipseEventState {
+  isActive: boolean;
+  phase: 'quiescent' | 'eclipse_dawn' | 'blood_moon' | 'fenrir_invasion' | 'climax';
+  timeRemainingSeconds: number;
+  currentWave: number;
+  maxWaves: number;
+  enemiesRemaining: number;
+  totalDamageDealt: number;
+  survivorBountyClaimed: boolean;
+  bossHp: number;
+  bossMaxHp: number;
+}
+
+// 15. Pet Runic Fusion & Ancient Breeding Altar
+export type RunicCatalystType = 'thor_lightning' | 'odin_wisdom' | 'freya_grace' | 'surtr_magma';
+
+export interface FusedPetChimera {
+  id: string;
+  name: string;
+  title: string;
+  parents: [PetId, PetId];
+  catalyst: RunicCatalystType;
+  damageBonus: number;
+  valorBonusPercent: number;
+  activeAbilityName: string;
+  activeAbilityDesc: string;
+  iconEmoji: string;
+  colorHex: string;
+  createdAt: number;
+}
+
+// 16. Modular Clan Fortress Building Pieces
+export interface ModularFortressPiece {
+  id: string;
+  type: 'palisade_heavy' | 'stone_tower' | 'portcullis_iron' | 'defense_catapult' | 'cauldron_pitch' | 'spiked_trench';
+  name: string;
+  health: number;
+  maxHealth: number;
+  woodCost: number;
+  ironCost: number;
+  placedX: number;
+  placedZ: number;
+  damagePerSec?: number;
+}
+
+// 17. Mead Hall Skald Rhythm Mini-Game
+export type NorseInstrumentType = 'tagelharpa' | 'bodhran_drum' | 'lur_horn' | 'gjallarhorn';
+
+export interface SkaldSongTrack {
+  id: string;
+  title: string;
+  subtitle: string;
+  instrument: NorseInstrumentType;
+  bpm: number;
+  difficulty: 'Thrall (Easy)' | 'Drengr (Medium)' | 'Berserker (Hard)';
+  durationSeconds: number;
+  buffDescription: string;
+}
+
+// 18. Friend Rally Link
+export interface FriendRallySession {
+  rallyCode: string;
+  chieftainName: string;
+  clan: string;
+  targetLocation: 'drakkar_deck' | 'katfjord_pier' | 'fortress_gate' | 'dragon_lair';
+  crewStationPreference?: CrewStation;
+  timestamp: number;
+}
+
 
 
 
